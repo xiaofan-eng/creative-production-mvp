@@ -68,6 +68,7 @@ function NewTaskForm() {
     if (!files || files.length === 0) return;
 
     setUploading(true);
+    let uploadedData: Array<{ name: string; url: string }> = [];
     try {
       const formData = new FormData();
       for (let i = 0; i < files.length; i++) {
@@ -78,15 +79,26 @@ function NewTaskForm() {
       if (!res.ok) throw new Error("上传失败");
 
       const data = await res.json();
-      setUploadedImages(prev => [...prev, ...data.files]);
+      uploadedData = data.files;
+      setUploadedImages(prev => [...prev, ...uploadedData]);
+    } catch {
+      alert("图片上传失败，请重试");
+      return;
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
 
-      // 自动调用 GLM-5V-Turbo 识别商品图内容，填入商品详情
-      setOcrProductLoading(true);
-      const allImages = [...uploadedImages, ...data.files];
+    // 上传完成后单独调用 OCR，错误不影响上传流程
+    if (uploadedData.length === 0) return;
+    setOcrProductLoading(true);
+    try {
+      // 只取最新上传的图片识别（最多3张），避免 base64 请求体过大
+      const toOcr = uploadedData.slice(0, 3);
       const ocrRes = await fetch("/api/ocr-product", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrls: allImages.map((img: { url: string }) => img.url) }),
+        body: JSON.stringify({ imageUrls: toOcr.map(img => img.url) }),
       });
       if (ocrRes.ok) {
         const ocrData = await ocrRes.json();
@@ -96,13 +108,14 @@ function NewTaskForm() {
             : ocrData.result
           );
         }
+      } else {
+        const errData = await ocrRes.json().catch(() => ({}));
+        console.error("OCR 失败:", errData);
       }
-    } catch {
-      alert("图片上传失败，请重试");
+    } catch (err) {
+      console.error("商品图识别失败:", err);
     } finally {
-      setUploading(false);
       setOcrProductLoading(false);
-      e.target.value = "";
     }
   };
 
