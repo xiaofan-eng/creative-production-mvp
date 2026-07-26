@@ -62,6 +62,22 @@ export async function POST(
 
     const [product] = db.select().from(products).where(eq(products.id, task.productId)).all();
 
+    // 对图片信息和竞品信息做摘要压缩（超过 300 字时调用 AI 总结）
+    const summarizeText = async (text: string, hint: string): Promise<string> => {
+      if (!text || text.length <= 300) return text;
+      const { generateText } = await import("ai");
+      const { text: summary } = await generateText({
+        model,
+        prompt: `请将以下${hint}内容压缩为300字以内的摘要，保留最关键的信息：\n\n${text.slice(0, 3000)}`,
+      });
+      return summary.trim();
+    };
+
+    const [productImagesSummary, competitorSummary] = await Promise.all([
+      summarizeText(product.productImages || "", "商品图片识别"),
+      summarizeText(product.competitorMaterials || "", "竞品"),
+    ]);
+
     // 获取历史数据（素材表现差 + 老品重推都查）
     let historicalDataSection = "";
     if (task.taskType === "low_performance" || task.taskType === "relaunch") {
@@ -100,8 +116,8 @@ export async function POST(
 详情：${product.detail.slice(0, 800)}
 ${product.price ? `价格：${product.price}` : ""}
 ${product.targetAudience ? `人群：${product.targetAudience}` : ""}
-${product.productImages ? `图片信息：${product.productImages.slice(0, 300)}` : ""}
-${product.competitorMaterials ? `竞品：${product.competitorMaterials.slice(0, 300)}` : ""}${historicalDataSection}`,
+${productImagesSummary ? `商品图片信息：${productImagesSummary}` : ""}
+${competitorSummary ? `竞品信息：${competitorSummary}` : ""}${historicalDataSection}`,
     });
 
     return NextResponse.json(analysis);
