@@ -12,41 +12,41 @@ const analysisSchema = z.object({
   productProfile: z.object({
     category: z.string().describe("商品类目"),
     priceRange: z.string().describe("价格带定位"),
-    coreFeatures: z.array(z.string()).describe("核心产品特征"),
+    coreFeatures: z.array(z.string()).describe("核心产品特征，最多5条"),
   }),
   sellingPoints: z.array(z.object({
     point: z.string().describe("卖点"),
     evidence: z.string().describe("依据"),
     priority: z.enum(["high", "medium", "low"]).describe("优先级"),
-  })).describe("核心卖点提取"),
+  })).describe("核心卖点提取，最多5条"),
   targetAudience: z.array(z.object({
     group: z.string().describe("人群名称"),
     age: z.string().describe("年龄范围"),
-    characteristics: z.string().describe("特征描述"),
-    painPoints: z.array(z.string()).describe("痛点"),
-  })).describe("目标人群画像"),
+    characteristics: z.string().describe("特征描述，简短"),
+    painPoints: z.array(z.string()).describe("痛点，最多3条"),
+  })).describe("目标人群画像，最多3组"),
   usageScenarios: z.array(z.object({
     scenario: z.string().describe("场景名称"),
-    description: z.string().describe("场景描述"),
+    description: z.string().describe("场景描述，简短"),
     triggerMoment: z.string().describe("触发时机"),
-  })).describe("使用场景识别"),
+  })).describe("使用场景识别，最多3条"),
   competitorComparison: z.array(z.object({
     dimension: z.string().describe("对比维度"),
     ourAdvantage: z.string().describe("我们的优势"),
     competitorApproach: z.string().describe("竞品做法"),
-  })).describe("竞品卖点对比"),
+  })).describe("竞品卖点对比，最多4条"),
   recommendation: z.object({
-    summary: z.string().describe("推荐策略总结"),
+    summary: z.string().describe("推荐策略总结，100字以内"),
     keyDirection: z.string().describe("核心内容方向"),
-    reasons: z.array(z.string()).describe("推荐理由"),
+    reasons: z.array(z.string()).describe("推荐理由，最多3条"),
   }).describe("推荐理由"),
   historicalAnalysis: z.object({
     hasHistory: z.boolean().describe("是否有历史数据"),
-    summary: z.string().describe("历史素材数据分析总结"),
-    goodPatterns: z.array(z.string()).describe("表现好的特征/角度"),
-    badPatterns: z.array(z.string()).describe("表现差的特征/角度，需避开"),
-    iterationDirection: z.string().describe("迭代优化方向"),
-  }).describe("历史素材数据分析（仅在有历史数据时填充）"),
+    summary: z.string().describe("历史素材数据分析总结，无数据时填'暂无历史数据'"),
+    goodPatterns: z.array(z.string()).describe("表现好的特征/角度，无数据时填空数组"),
+    badPatterns: z.array(z.string()).describe("表现差的特征/角度，无数据时填空数组"),
+    iterationDirection: z.string().describe("迭代优化方向，无数据时填'暂无历史数据，建议先完成首次投放后再优化'"),
+  }).describe("历史素材数据分析，无论有无历史数据都必须输出此字段"),
 });
 
 export async function POST(
@@ -115,6 +115,30 @@ ${historyRecords.join("\n")}`;
         }
 
         sendEvent("analyzing", { message: "正在分析商品信息..." });
+
+        // 为老品重推类型也加入历史素材数据分析
+        if (task.taskType === "relaunch" && !historicalDataSection) {
+          const sameProducts = db.select().from(products).all().filter(p => p.title === product.title);
+          const sameProductIds = sameProducts.map(p => p.id);
+          const histTasks = db.select().from(tasks).all().filter(t => sameProductIds.includes(t.productId) && t.id !== id && t.status === "completed");
+
+          const historyRecords: string[] = [];
+          for (const ht of histTasks) {
+            const versions = db.select().from(contentVersions).where(eq(contentVersions.taskId, ht.id)).all();
+            for (const v of versions) {
+              const fbs = db.select().from(feedback).where(eq(feedback.contentVersionId, v.id)).all();
+              const finalFb = fbs.find(f => f.adoptionStatus === "adopted" || f.adoptionStatus === "rejected") || fbs[0];
+              if (finalFb) {
+                let record = `- 类型：${ht.generateType || "全部"}，角度：${v.contentAngle}，结果：${finalFb.adoptionStatus}`;
+                if (finalFb.editNote) record += `，修改：${finalFb.editNote.slice(0, 50)}`;
+                historyRecords.push(record);
+              }
+            }
+          }
+          if (historyRecords.length > 0) {
+            historicalDataSection = `\n\n## 历史生成记录\n${historyRecords.join("\n")}`;
+          }
+        }
 
         const { object: analysis } = await generateObject({
           model,
