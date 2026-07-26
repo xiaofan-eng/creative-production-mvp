@@ -138,6 +138,16 @@ function NewTaskForm() {
 
     setLoading(true);
     try {
+      // 商品图：只传文件名描述，不存 base64（太大）
+      const imageDesc = uploadedImages.length > 0
+        ? `已上传${uploadedImages.length}张商品图片（${uploadedImages.map(img => img.name).join("、")}）` + (productImages ? `\n补充描述: ${productImages}` : "")
+        : productImages || undefined;
+
+      // 竞品图：同上
+      const competitorDesc = uploadedCompetitorImages.length > 0
+        ? `已上传${uploadedCompetitorImages.length}张竞品图片（${uploadedCompetitorImages.map(img => img.name).join("、")}）` + (competitorMaterials ? `\n识别内容及补充：${competitorMaterials}` : "")
+        : competitorMaterials || undefined;
+
       const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -147,12 +157,8 @@ function NewTaskForm() {
           detail,
           price: price || undefined,
           targetAudience: targetAudience || undefined,
-          productImages: uploadedImages.length > 0
-            ? uploadedImages.map(img => img.url).join(", ") + (productImages ? `\n补充描述: ${productImages}` : "")
-            : productImages || undefined,
-          competitorMaterials: uploadedCompetitorImages.length > 0
-            ? uploadedCompetitorImages.map(img => img.url).join(", ") + (competitorMaterials ? `\n补充描述: ${competitorMaterials}` : "")
-            : competitorMaterials || undefined,
+          productImages: imageDesc,
+          competitorMaterials: competitorDesc,
         }),
       });
 

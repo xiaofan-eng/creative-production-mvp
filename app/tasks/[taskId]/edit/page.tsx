@@ -115,11 +115,12 @@ export default function EditTaskPage() {
     if (!title || !detail) return;
     setLoading(true);
     try {
-      const finalProductImages = uploadedImages.length > 0
-        ? uploadedImages.map(img => img.url).join(", ") + (productImages ? `\n补充描述: ${productImages}` : "")
+      const imageDesc = uploadedImages.length > 0
+        ? `已上传${uploadedImages.length}张商品图片（${uploadedImages.map(img => img.name).join("、")}）` + (productImages ? `\n补充描述: ${productImages}` : "")
         : productImages || null;
-      const finalCompetitorMaterials = uploadedCompetitorImages.length > 0
-        ? uploadedCompetitorImages.map(img => img.url).join(", ") + (competitorMaterials ? `\n补充描述: ${competitorMaterials}` : "")
+
+      const competitorDesc = uploadedCompetitorImages.length > 0
+        ? `已上传${uploadedCompetitorImages.length}张竞品图片（${uploadedCompetitorImages.map(img => img.name).join("、")}）` + (competitorMaterials ? `\n识别内容及补充：${competitorMaterials}` : "")
         : competitorMaterials || null;
 
       await fetch(`/api/tasks/${taskId}/update`, {
@@ -131,8 +132,8 @@ export default function EditTaskPage() {
           detail,
           price: price || null,
           targetAudience: targetAudience || null,
-          productImages: finalProductImages,
-          competitorMaterials: finalCompetitorMaterials,
+          productImages: imageDesc,
+          competitorMaterials: competitorDesc,
         }),
       });
       router.push(`/tasks/${taskId}/analysis`);

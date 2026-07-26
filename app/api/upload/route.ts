@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
-import fs from "fs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,27 +10,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "没有上传文件" }, { status: 400 });
     }
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
     const uploadedFiles: Array<{ name: string; url: string; size: number }> = [];
 
     for (const file of files) {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-
-      // 生成唯一文件名
-      const ext = path.extname(file.name);
-      const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
-      const filePath = path.join(uploadDir, uniqueName);
-
-      fs.writeFileSync(filePath, buffer);
+      const base64 = buffer.toString("base64");
+      const ext = path.extname(file.name).slice(1).toLowerCase();
+      const mimeType = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
 
       uploadedFiles.push({
         name: file.name,
-        url: `/uploads/${uniqueName}`,
+        url: `data:${mimeType};base64,${base64}`,
         size: file.size,
       });
     }
