@@ -140,6 +140,13 @@ export default function EditTaskPage() {
     const vagueTitle = /那个|这个|就是|好像|之类|那种|最近很火|不知道|啥|咋|感觉|有个|某款/.test(title);
     if (vagueTitle) return `商品标题「${title}」过于模糊，请填写完整的商品名称（如品牌名+产品名+规格）`;
 
+    const strippedTitle = title
+      .replace(/那个|这个|就是|好像|之类|那种|最近|不知道|超|很|非常|特别|比较|有点|稍微|一款|一个|不错的|好用的|显白的|热门的|爆款|网红|平价|高端|好看的|推荐的|新出的|火爆的/g, "")
+      .replace(/\s+/g, "").trim();
+    if (strippedTitle.length <= 4) {
+      return `商品标题「${title}」缺少品牌名或具体产品名，请填写完整名称（如：珀莱雅双抗精华2.0 30ml）`;
+    }
+
     const vagueDetail = detail.trim().length < 15 || /就是|好用|不错|还行|感觉|挺好|很好|都说|朋友说|听说|反正|之类/.test(detail);
     if (vagueDetail) return `商品详情「${detail.slice(0, 20)}...」信息不足，请填写商品核心功效、成分、规格等具体信息`;
 
