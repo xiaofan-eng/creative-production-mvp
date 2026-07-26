@@ -46,7 +46,7 @@ const analysisSchema = z.object({
     goodPatterns: z.array(z.string()).describe("最多2条，无数据填空数组"),
     badPatterns: z.array(z.string()).describe("最多2条，无数据填空数组"),
     iterationDirection: z.string().describe("30字以内"),
-  }),
+  }).describe("仅当有真实历史任务反馈数据时才填写，否则 hasHistory 必须为 false，其余字段填默认空值"),
 });
 
 export async function POST(
@@ -110,7 +110,7 @@ export async function POST(
       model,
       mode: "json",
       schema: analysisSchema,
-      system: "你是电商商品分析专家。根据商品信息做简洁分析，所有字段严格控制在描述的字数限制内，不要输出多余内容。",
+      system: "你是电商商品分析专家。根据商品信息做简洁分析，所有字段严格控制在描述的字数限制内，不要输出多余内容。重要：historicalAnalysis 字段只有在提示词中明确提供了'历史记录'数据时才能填写有效内容，否则 hasHistory 必须为 false，goodPatterns/badPatterns 必须为空数组，summary 填'暂无历史数据'，iterationDirection 填'暂无'。严禁凭商品标题或描述中的代际信息（如'第3代'）推断历史数据。",
       prompt: `分析商品：
 标题：${product.title}
 详情：${product.detail.slice(0, 800)}
