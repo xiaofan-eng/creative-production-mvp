@@ -73,10 +73,13 @@ export default function EditTaskPage() {
       if (ocrRes.ok) {
         const ocrData = await ocrRes.json();
         if (ocrData.result) {
-          setProductImages(prev => prev
-            ? prev + "\n\n---图片识别内容---\n" + ocrData.result
-            : ocrData.result
-          );
+          const sumRes = await fetch("/api/summarize-ocr", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ocrText: ocrData.result, type: "product" }),
+          });
+          const summary = sumRes.ok ? (await sumRes.json()).summary : ocrData.result;
+          setProductImages(prev => prev ? prev + "\n\n" + summary : summary);
         }
       }
     } catch {
@@ -112,7 +115,13 @@ export default function EditTaskPage() {
       if (ocrRes.ok) {
         const ocrData = await ocrRes.json();
         if (ocrData.result) {
-          setCompetitorMaterials(prev => prev ? prev + "\n\n---AI识别内容---\n" + ocrData.result : ocrData.result);
+          const sumRes = await fetch("/api/summarize-ocr", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ocrText: ocrData.result, type: "competitor" }),
+          });
+          const summary = sumRes.ok ? (await sumRes.json()).summary : ocrData.result;
+          setCompetitorMaterials(prev => prev ? prev + "\n\n" + summary : summary);
         }
       }
     } catch {
