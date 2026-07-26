@@ -1,65 +1,174 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
+interface Alert {
+  id: number;
+  taskId: number;
+  triggerType: string;
+  triggerReason: string;
+  suggestion: string;
+  createdAt: string;
+}
+
+interface TaskItem {
+  tasks: {
+    id: number;
+    taskType: string;
+    status: string;
+    generateType?: string | null;
+    createdAt: string;
+  };
+  products: {
+    title: string;
+  } | null;
+}
+
+const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  pending: { label: "待处理", variant: "secondary" },
+  generating: { label: "生成中", variant: "default" },
+  completed: { label: "已完成", variant: "outline" },
+  failed: { label: "失败", variant: "destructive" },
+};
+
+const generateTypeLabels: Record<string, string> = {
+  script: "带货脚本",
+  image_brief: "商品图/封面Brief",
+  storyboard: "短视频分镜",
+};
+
+const taskTypeMap: Record<string, string> = {
+  new_product: "商品上新",
+  relaunch: "老品重推",
+  low_performance: "素材表现差",
+};
+
+export default function HomePage() {
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [recentTasks, setRecentTasks] = useState<TaskItem[]>([]);
+
+  useEffect(() => {
+    fetch("/api/alerts").then(r => r.json()).then(setAlerts).catch(() => {});
+    fetch("/api/tasks").then(r => r.json()).then((data) => {
+      if (Array.isArray(data)) {
+        // 过滤掉没有生成类型且状态为 pending 的中间任务
+        const filtered = data.filter((item: TaskItem) =>
+          item.tasks.status !== "pending" || item.tasks.generateType
+        );
+        setRecentTasks(filtered.slice(0, 10));
+      }
+    }).catch(() => {});
+  }, []);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold mb-2">商素智作</h1>
+        <p className="text-muted-foreground">
+          面向抖音电商商家的商品素材生成与反馈优化助手。从商品信息出发，生成带货脚本、商品图/封面 Brief、短视频分镜，并通过反馈数据驱动下一次生成。
+        </p>
+      </div>
+
+      {/* 快速操作 */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Link href="/tasks/new?type=new_product">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+            <CardHeader>
+              <CardTitle className="text-lg">🆕 商品上新</CardTitle>
+              <CardDescription>为新商品生成一组可测试的带货素材方案</CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+        <Link href="/tasks/new?type=relaunch">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+            <CardHeader>
+              <CardTitle className="text-lg">🔄 老品重推</CardTitle>
+              <CardDescription>为表现下滑的商品换角度重新生成素材</CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+        <Link href="/tasks/new?type=low_performance">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+            <CardHeader>
+              <CardTitle className="text-lg">📉 素材优化</CardTitle>
+              <CardDescription>基于历史反馈优化当前素材策略</CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+      </div>
+
+      {/* 最近任务 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>最近任务</CardTitle>
+          <CardDescription>你最近的素材生成任务</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {recentTasks.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              暂无任务，<Link href="/tasks/new" className="text-primary hover:underline">创建第一个任务</Link>
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {recentTasks.map(item => {
+                const gt = item.tasks.generateType;
+                const href = gt
+                  ? `/tasks/${item.tasks.id}?generate=${gt}`
+                  : `/tasks/${item.tasks.id}`;
+                return (
+                  <div
+                    key={item.tasks.id}
+                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent transition-colors"
+                  >
+                    <Link href={href} className="flex items-center gap-3 flex-1">
+                      <Badge variant={statusMap[item.tasks.status]?.variant || "secondary"}>
+                        {statusMap[item.tasks.status]?.label || item.tasks.status}
+                      </Badge>
+                      <span className="font-medium">{item.products?.title || "未知商品"}</span>
+                      {gt && (
+                        <Badge variant="outline" className="text-xs">
+                          {generateTypeLabels[gt] || gt}
+                        </Badge>
+                      )}
+                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/tasks/${item.tasks.id}/data-feedback`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-xs px-2 py-1 rounded border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors"
+                      >
+                        📊 录入数据反馈
+                      </Link>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(item.tasks.createdAt).toLocaleDateString("zh-CN")}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (!confirm("确定删除该任务？删除后不可恢复。")) return;
+                          await fetch(`/api/tasks/${item.tasks.id}/delete`, { method: "POST" });
+                          setRecentTasks(prev => prev.filter(t => t.tasks.id !== item.tasks.id));
+                        }}
+                        className="text-muted-foreground hover:text-red-600 transition-colors p-1"
+                        title="删除"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
