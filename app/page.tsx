@@ -25,6 +25,7 @@ interface TaskItem {
   products: {
     title: string;
   } | null;
+  version?: string | null;
 }
 
 const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -54,11 +55,29 @@ export default function HomePage() {
     fetch("/api/alerts").then(r => r.json()).then(setAlerts).catch(() => {});
     fetch("/api/tasks").then(r => r.json()).then((data) => {
       if (Array.isArray(data)) {
-        // 过滤掉没有生成类型且状态为 pending 的中间任务
         const filtered = data.filter((item: TaskItem) =>
           item.tasks.status !== "pending" || item.tasks.generateType
         );
-        setRecentTasks(filtered.slice(0, 10));
+
+        // 计算每个任务的版本号：同商品+同类型按时间升序排第几次
+        const versionPrefix: Record<string, string> = {
+          script: "v",
+          image_brief: "m",
+          storyboard: "u",
+        };
+        // 按商品title+generateType分组，记录出现次序（升序）
+        const countMap: Record<string, number> = {};
+        const withVersion = [...filtered].reverse().map((item: TaskItem) => {
+          const gt = item.tasks.generateType;
+          const title = item.products?.title || "";
+          if (!gt || !title) return { ...item, version: null };
+          const key = `${title}__${gt}`;
+          countMap[key] = (countMap[key] || 0) + 1;
+          const prefix = versionPrefix[gt] || "v";
+          return { ...item, version: `${prefix}${countMap[key]}` };
+        }).reverse();
+
+        setRecentTasks(withVersion.slice(0, 10));
       }
     }).catch(() => {});
   }, []);
@@ -131,6 +150,11 @@ export default function HomePage() {
                       {gt && (
                         <Badge variant="outline" className="text-xs">
                           {generateTypeLabels[gt] || gt}
+                        </Badge>
+                      )}
+                      {item.version && (
+                        <Badge variant="secondary" className="text-xs font-mono">
+                          {item.version}
                         </Badge>
                       )}
                     </Link>
