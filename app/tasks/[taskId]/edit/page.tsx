@@ -73,7 +73,7 @@ export default function EditTaskPage() {
       if (ocrRes.ok) {
         const ocrData = await ocrRes.json();
         if (ocrData.result) {
-          setDetail(prev => prev
+          setProductImages(prev => prev
             ? prev + "\n\n---图片识别内容---\n" + ocrData.result
             : ocrData.result
           );
