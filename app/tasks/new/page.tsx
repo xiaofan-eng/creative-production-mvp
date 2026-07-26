@@ -178,9 +178,39 @@ function NewTaskForm() {
     setUploadedCompetitorImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const detectVague = (): string | null => {
+    // 商品标题：口语化特征（那个/这个/就是/好像/之类/那种/最近/不知道）
+    const vagueTitle = /那个|这个|就是|好像|之类|那种|最近很火|不知道|啥|咋|感觉|有个|某款/.test(title);
+    if (vagueTitle) return `商品标题「${title}」过于模糊，请填写完整的商品名称（如品牌名+产品名+规格）`;
+
+    // 商品详情：有效信息不足（少于15字，或充斥口语词）
+    const vagueDetail = detail.trim().length < 15 || /就是|好用|不错|还行|感觉|挺好|很好|都说|朋友说|听说|反正|之类/.test(detail);
+    if (vagueDetail) return `商品详情「${detail.slice(0, 20)}...」信息不足，请填写商品核心功效、成分、规格等具体信息`;
+
+    // 价格：含口语估算词
+    if (price) {
+      const vaguePrice = /不知道|好像|大概|差不多|左右|多|块钱|应该|估计/.test(price);
+      if (vaguePrice) return `价格「${price}」为估算值，请填写实际售价（如：¥79 或 79-99元）`;
+    }
+
+    // 目标人群：过于简短或口语化
+    if (targetAudience) {
+      const vagueAudience = targetAudience.trim().length < 4 || /大家|所有人|都行|都可以|不限|随便|各种人/.test(targetAudience);
+      if (vagueAudience) return `目标人群「${targetAudience}」过于模糊，请填写具体描述（如：20-30岁油皮女性）`;
+    }
+
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !detail) return;
+
+    const vagueWarning = detectVague();
+    if (vagueWarning) {
+      alert(`输入信息过于模糊，请修改后重试：\n\n${vagueWarning}`);
+      return;
+    }
 
     setLoading(true);
     try {
