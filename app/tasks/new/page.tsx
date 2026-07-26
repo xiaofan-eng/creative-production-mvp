@@ -93,24 +93,30 @@ function NewTaskForm() {
     if (uploadedData.length === 0) return;
     setOcrProductLoading(true);
     try {
-      // 只取最新上传的图片识别（最多3张），避免 base64 请求体过大
-      const toOcr = uploadedData.slice(0, 3);
-      const ocrRes = await fetch("/api/ocr-product", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrls: toOcr.map(img => img.url) }),
-      });
-      if (ocrRes.ok) {
-        const ocrData = await ocrRes.json();
-        if (ocrData.result) {
-          setDetail(prev => prev
-            ? prev + "\n\n---图片识别内容---\n" + ocrData.result
-            : ocrData.result
-          );
+      // 分批识别，每批最多3张，结果合并
+      const BATCH_SIZE = 3;
+      const results: string[] = [];
+      for (let i = 0; i < uploadedData.length; i += BATCH_SIZE) {
+        const batch = uploadedData.slice(i, i + BATCH_SIZE);
+        const ocrRes = await fetch("/api/ocr-product", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageUrls: batch.map(img => img.url) }),
+        });
+        if (ocrRes.ok) {
+          const ocrData = await ocrRes.json();
+          if (ocrData.result) results.push(ocrData.result);
+        } else {
+          const errData = await ocrRes.json().catch(() => ({}));
+          console.error(`OCR 第${Math.floor(i/BATCH_SIZE)+1}批失败:`, errData);
         }
-      } else {
-        const errData = await ocrRes.json().catch(() => ({}));
-        console.error("OCR 失败:", errData);
+      }
+      if (results.length > 0) {
+        const combined = results.join("\n\n");
+        setDetail(prev => prev
+          ? prev + "\n\n---图片识别内容---\n" + combined
+          : combined
+        );
       }
     } catch (err) {
       console.error("商品图识别失败:", err);
