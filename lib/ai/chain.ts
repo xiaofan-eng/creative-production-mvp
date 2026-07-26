@@ -224,19 +224,28 @@ export async function runPromptChain(
     ),
   });
 
-  // 解析推荐理由（按编号或段落分配给各方案）
+  // 解析推荐理由（按编号分配给各方案）
   const reasons: string[] = [];
-  // 尝试按 "1." "2." "3." 编号分割
-  const numberedMatch = reasonsText.split(/\n*\d+[\.\、\)）]\s*/);
-  const filtered = numberedMatch.filter(r => r.trim().length > 10);
+
+  // 先清理掉AI可能输出的占位标签 [第X组方案推荐理由]
+  const cleanedText = reasonsText.replace(/\[第\d+组[^\]]*\]\s*/g, "").trim();
+
+  // 按 "1." "2." "3." 等编号分割
+  const numberedMatch = cleanedText.split(/\n*\d+[\.\、\)）]\s*/);
+  const filtered = numberedMatch
+    .map(r => r.trim())
+    .filter(r => r.length > 10);
+
   if (filtered.length >= packages.length) {
-    // 成功按编号分割
     for (let i = 0; i < packages.length; i++) {
       reasons.push(filtered[i].trim());
     }
   } else {
     // fallback: 按双换行分割
-    const paragraphs = reasonsText.split(/\n\n+/).filter(r => r.trim().length > 10);
+    const paragraphs = cleanedText
+      .split(/\n\n+/)
+      .map(r => r.trim())
+      .filter(r => r.length > 10);
     for (let i = 0; i < packages.length; i++) {
       reasons.push(paragraphs[i]?.trim() || "基于商品卖点和目标人群匹配度推荐此方案。");
     }
