@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import ContentPackageCard from "@/components/content-package-card";
 
 interface TaskData {
-  task: { id: number; taskType: string; status: string; createdAt: string };
+  task: { id: number; taskType: string; status: string; generateType?: string | null; createdAt: string };
   product: { title: string; detail: string; price?: string; targetAudience?: string };
   profile?: { category: string; priceRange: string; sellingPoints: string };
   contentVersions: Array<{
@@ -29,6 +29,14 @@ interface TaskData {
     feedback: Array<{ adoptionStatus: string; editNote?: string; rejectionReason?: string; module?: string }>;
     performance: Array<{ impression?: number; click?: number; ctr?: number; conversion?: number }>;
   }>;
+  previousCaseSummary?: Array<{
+    contentAngle: string;
+    adoptionStatus: string | null;
+    editNote: string | null;
+    ctr: number | null;
+    impression: number | null;
+    performanceRating: string | null;
+  }> | null;
 }
 
 interface GenerationStep {
@@ -155,7 +163,7 @@ function TaskDetailContent() {
     return <div className="text-center py-12 text-muted-foreground">加载中...</div>;
   }
 
-  const { task, product, contentVersions: allVersions } = taskData;
+  const { task, product, contentVersions: allVersions, previousCaseSummary } = taskData;
 
   // 只取最新一批的 3 个内容版本（按 id 降序取最后 3 条）
   const versions = allVersions.length > 3
@@ -222,6 +230,47 @@ function TaskDetailContent() {
             <Button variant="outline" className="mt-2" onClick={startGeneration}>
               🔄 重新生成
             </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 参考案例摘要 */}
+      {previousCaseSummary && previousCaseSummary.length > 0 && (
+        <Card className="border-blue-200 bg-blue-50/40">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base text-blue-800">📋 上次生成参考摘要</CardTitle>
+            <p className="text-xs text-blue-600">基于同商品同类型上次生成结果及用户反馈</p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {previousCaseSummary.map((c, i) => {
+                const statusIcon = c.adoptionStatus === "adopted" ? "✅" : c.adoptionStatus === "rejected" ? "❌" : c.adoptionStatus === "modified" ? "✏️" : "—";
+                const statusLabel = c.adoptionStatus === "adopted" ? "已采用" : c.adoptionStatus === "rejected" ? "已弃用" : c.adoptionStatus === "modified" ? "已修改" : "未反馈";
+                return (
+                  <div key={i} className="flex items-start gap-3 p-3 bg-white rounded-lg border border-blue-100">
+                    <span className="text-lg mt-0.5">{statusIcon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium">方案{i + 1}：{c.contentAngle}</span>
+                        <Badge variant="outline" className="text-xs">{statusLabel}</Badge>
+                        {c.ctr !== null && (
+                          <Badge variant="secondary" className="text-xs">CTR {c.ctr}%</Badge>
+                        )}
+                        {c.impression !== null && (
+                          <span className="text-xs text-muted-foreground">曝光 {c.impression?.toLocaleString()}</span>
+                        )}
+                        {c.performanceRating && (
+                          <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">{c.performanceRating}</Badge>
+                        )}
+                      </div>
+                      {c.editNote && (
+                        <p className="text-xs text-muted-foreground mt-1">修改方向：{c.editNote}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
       )}
