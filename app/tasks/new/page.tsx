@@ -93,26 +93,37 @@ function NewTaskForm() {
     if (uploadedData.length === 0) return;
     setOcrProductLoading(true);
     try {
-      // 分批识别，每批最多3张，结果合并
+      // 分批识别，每批最多3张，并行发出所有批次请求
       const BATCH_SIZE = 3;
-      const results: string[] = [];
+      const batches: Array<Array<{ name: string; url: string }>> = [];
       for (let i = 0; i < uploadedData.length; i += BATCH_SIZE) {
-        const batch = uploadedData.slice(i, i + BATCH_SIZE);
-        const ocrRes = await fetch("/api/ocr-product", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageUrls: batch.map(img => img.url) }),
-        });
-        if (ocrRes.ok) {
-          const ocrData = await ocrRes.json();
-          if (ocrData.result) results.push(ocrData.result);
-        } else {
-          const errData = await ocrRes.json().catch(() => ({}));
-          console.error(`OCR 第${Math.floor(i/BATCH_SIZE)+1}批失败:`, errData);
-        }
+        batches.push(uploadedData.slice(i, i + BATCH_SIZE));
       }
-      if (results.length > 0) {
-        const combined = results.join("\n\n");
+
+      const batchResults = await Promise.all(
+        batches.map(async (batch, idx) => {
+          try {
+            const ocrRes = await fetch("/api/ocr-product", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ imageUrls: batch.map(img => img.url) }),
+            });
+            if (ocrRes.ok) {
+              const ocrData = await ocrRes.json();
+              return ocrData.result || "";
+            }
+            const errData = await ocrRes.json().catch(() => ({}));
+            console.error(`OCR 第${idx + 1}批失败:`, errData);
+            return "";
+          } catch (err) {
+            console.error(`OCR 第${idx + 1}批异常:`, err);
+            return "";
+          }
+        })
+      );
+
+      const combined = batchResults.filter(Boolean).join("\n\n");
+      if (combined) {
         setDetail(prev => prev
           ? prev + "\n\n---图片识别内容---\n" + combined
           : combined
