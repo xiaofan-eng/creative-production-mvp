@@ -53,6 +53,8 @@ export async function runPromptChain(
     rejectionReason?: string;
     editNote?: string;
     ctr?: number;
+    impression?: number;
+    generateType?: string;
   }> | null,
   generateType?: string | null // "script" | "image_brief" | "storyboard" | null (all)
 ): Promise<GenerationResult> {
@@ -80,12 +82,15 @@ export async function runPromptChain(
 
   // Step 3: P3 内容角度生成
   // 构建历史角度信息（来自 historicalFeedback）
-  const historicalAngles = historicalFeedback?.map(fb => ({
-    angle: fb.contentAngle,
-    feedback: fb.ctr !== undefined
-      ? `CTR ${fb.ctr}%，状态：${fb.adoptionStatus}${fb.rejectionReason ? `，原因：${fb.rejectionReason}` : ""}`
-      : `状态：${fb.adoptionStatus}${fb.rejectionReason ? `，原因：${fb.rejectionReason}` : ""}`,
-  })) || null;
+  const historicalAngles = historicalFeedback?.map(fb => {
+    const parts: string[] = [];
+    parts.push(`状态：${fb.adoptionStatus === "adopted" ? "已采用" : fb.adoptionStatus === "rejected" ? "已弃用" : "已修改"}`);
+    if (fb.ctr !== undefined) parts.push(`CTR ${fb.ctr}%`);
+    if (fb.impression !== undefined) parts.push(`曝光 ${fb.impression}`);
+    if (fb.rejectionReason) parts.push(`弃用原因：${fb.rejectionReason}`);
+    if (fb.editNote) parts.push(`修改内容：${fb.editNote}`);
+    return { angle: fb.contentAngle, feedback: parts.join("，") };
+  }) || null;
 
   onProgress(3, "内容角度生成");
   const { object: contentAngles } = await generateObject({

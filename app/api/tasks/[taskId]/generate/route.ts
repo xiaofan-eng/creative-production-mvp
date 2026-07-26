@@ -37,10 +37,11 @@ export async function POST(
 
         const [product] = db.select().from(products).where(eq(products.id, task.productId)).all();
 
-        // 获取历史反馈（同商品的历史记录）
+        // 获取同商品所有已完成历史任务（按时间升序）
         const historicalTasks = db.select().from(tasks)
           .where(and(eq(tasks.productId, task.productId), eq(tasks.status, "completed")))
-          .all();
+          .all()
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
         let historicalFeedback: Array<{
           contentAngle: string;
@@ -48,28 +49,63 @@ export async function POST(
           rejectionReason?: string;
           editNote?: string;
           ctr?: number;
+          impression?: number;
+          generateType?: string;
         }> | null = null;
 
         if (historicalTasks.length > 0) {
-          const histTaskIds = historicalTasks.map(t => t.id);
-          const histVersions = db.select().from(contentVersions)
-            .where(eq(contentVersions.taskId, histTaskIds[0]))
-            .all();
-
           historicalFeedback = [];
-          for (const v of histVersions) {
-            const [fb] = db.select().from(feedback).where(eq(feedback.contentVersionId, v.id)).all();
-            const [perf] = db.select().from(performance).where(eq(performance.contentVersionId, v.id)).all();
-            if (fb) {
-              historicalFeedback.push({
-                contentAngle: v.contentAngle,
-                adoptionStatus: fb.adoptionStatus,
-                rejectionReason: fb.rejectionReason || undefined,
-                editNote: fb.editNote || undefined,
-                ctr: perf?.ctr || undefined,
-              });
+
+          for (const histTask of historicalTasks) {
+            // 只取同类型的历史记录（本次生成脚本就只参考历史脚本的反馈）
+            if (generateType && histTask.generateType && histTask.generateType !== generateType) {
+              continue;
+            }
+
+            const histVersions = db.select().from(contentVersions)
+              .where(eq(contentVersions.taskId, histTask.id))
+              .all();
+
+            for (const v of histVersions) {
+              // 获取该版本的所有反馈（取最后一条有效状态）
+              const fbs = db.select().from(feedback)
+                .where(eq(feedback.contentVersionId, v.id))
+                .all()
+                .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+              // 取最终状态：优先 adopted/rejected，其次 modified
+              const finalFb = fbs.find(f => f.adoptionStatus === "adopted" || f.adoptionStatus === "rejected")
+                || fbs.find(f => f.adoptionStatus === "modified")
+                || fbs[0];
+
+              // 获取表现数据
+              const perfs = db.select().from(performance)
+                .where(eq(performance.contentVersionId, v.id))
+                .all()
+                .filter(p => (p.impression || 0) > 0);
+              const latestPerf = perfs[perfs.length - 1];
+
+              // 收集修改过内容的 editNote
+              const modifyNotes = fbs
+                .filter(f => f.adoptionStatus === "modified" && f.editNote)
+                .map(f => f.editNote)
+                .filter(Boolean);
+
+              if (finalFb || latestPerf) {
+                historicalFeedback.push({
+                  contentAngle: v.contentAngle,
+                  adoptionStatus: finalFb?.adoptionStatus || "unknown",
+                  rejectionReason: finalFb?.rejectionReason || undefined,
+                  editNote: modifyNotes.length > 0 ? modifyNotes.join("；") : (finalFb?.editNote || undefined),
+                  ctr: latestPerf?.ctr || undefined,
+                  impression: latestPerf?.impression || undefined,
+                  generateType: histTask.generateType || undefined,
+                });
+              }
             }
           }
+
+          if (historicalFeedback.length === 0) historicalFeedback = null;
         }
 
         // 运行 Prompt Chain
