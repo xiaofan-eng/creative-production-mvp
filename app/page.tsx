@@ -77,7 +77,7 @@ export default function HomePage() {
           return { ...item, version: `${prefix}${countMap[key]}` };
         }).reverse();
 
-        setRecentTasks(withVersion.slice(0, 10));
+        setRecentTasks(withVersion);
       }
     }).catch(() => {});
   }, []);
