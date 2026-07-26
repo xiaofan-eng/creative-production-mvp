@@ -2,6 +2,18 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 
+// GLM-5V-Turbo 对单张图片 base64 大小有限制，截断到合理长度
+function truncateBase64(dataUrl: string, maxBytes = 800_000): string {
+  // base64 部分长度
+  const base64Part = dataUrl.split(",")[1] || "";
+  const byteLen = Math.floor(base64Part.length * 0.75);
+  if (byteLen <= maxBytes) return dataUrl;
+  // 截断 base64（按字符数截断，近似）
+  const maxChars = Math.floor(maxBytes / 0.75);
+  const prefix = dataUrl.split(",")[0];
+  return prefix + "," + base64Part.slice(0, maxChars);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { imageUrls } = await req.json();
@@ -13,9 +25,10 @@ export async function POST(req: NextRequest) {
     const content: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
 
     for (const url of imageUrls) {
+      const processedUrl = url.startsWith("data:") ? truncateBase64(url) : url;
       content.push({
         type: "image_url",
-        image_url: { url },
+        image_url: { url: processedUrl },
       });
     }
 
@@ -51,3 +64,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "图片识别失败" }, { status: 500 });
   }
 }
+

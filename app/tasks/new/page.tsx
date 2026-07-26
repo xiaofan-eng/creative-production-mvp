@@ -89,45 +89,30 @@ function NewTaskForm() {
       e.target.value = "";
     }
 
-    // 上传完成后单独调用 OCR，错误不影响上传流程
+    // 上传完成后单独调用 OCR，只识别本次新上传的图片（最多5张）
     if (uploadedData.length === 0) return;
     setOcrProductLoading(true);
     try {
-      // 分批识别，每批最多3张，并行发出所有批次请求
-      const BATCH_SIZE = 3;
-      const batches: Array<Array<{ name: string; url: string }>> = [];
-      for (let i = 0; i < uploadedData.length; i += BATCH_SIZE) {
-        batches.push(uploadedData.slice(i, i + BATCH_SIZE));
+      const toOcr = uploadedData.slice(0, 5);
+      const ocrRes = await fetch("/api/ocr-product", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrls: toOcr.map(img => img.url) }),
+      });
+      if (ocrRes.ok) {
+        const ocrData = await ocrRes.json();
+        if (ocrData.result) {
+          setDetail(prev => prev
+            ? prev + "\n\n---图片识别内容---\n" + ocrData.result
+            : ocrData.result
+          );
+        }
+      } else {
+        const errData = await ocrRes.json().catch(() => ({}));
+        console.error("OCR 失败:", errData);
       }
-
-      const batchResults = await Promise.all(
-        batches.map(async (batch, idx) => {
-          try {
-            const ocrRes = await fetch("/api/ocr-product", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ imageUrls: batch.map(img => img.url) }),
-            });
-            if (ocrRes.ok) {
-              const ocrData = await ocrRes.json();
-              return ocrData.result || "";
-            }
-            const errData = await ocrRes.json().catch(() => ({}));
-            console.error(`OCR 第${idx + 1}批失败:`, errData);
-            return "";
-          } catch (err) {
-            console.error(`OCR 第${idx + 1}批异常:`, err);
-            return "";
-          }
-        })
-      );
-
-      const combined = batchResults.filter(Boolean).join("\n\n");
-      if (combined) {
-        setDetail(prev => prev
-          ? prev + "\n\n---图片识别内容---\n" + combined
-          : combined
-        );
+      if (uploadedData.length > 5) {
+        alert(`本次识别了前5张图片，剩余 ${uploadedData.length - 5} 张可再次上传识别。`);
       }
     } catch (err) {
       console.error("商品图识别失败:", err);
