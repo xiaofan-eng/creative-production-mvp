@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { tasks, contentVersions, feedback, performance, triggers } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     // 检查所有已完成的任务

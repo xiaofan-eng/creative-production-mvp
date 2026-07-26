@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { tasks, products, contentVersions, performance, feedback } from "@/lib/db/schema";
