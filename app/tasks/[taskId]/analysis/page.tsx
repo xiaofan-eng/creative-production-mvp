@@ -82,31 +82,14 @@ export default function AnalysisPage() {
 
       try {
         const res = await fetch(`/api/tasks/${taskId}/analyze`, { method: "POST" });
-        const reader = res.body?.getReader();
-        const decoder = new TextDecoder();
-
-        if (!reader) throw new Error("无法读取");
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const text = decoder.decode(value);
-          const lines = text.split("\n").filter(l => l.startsWith("data: "));
-
-          for (const line of lines) {
-            try {
-              const event = JSON.parse(line.slice(6));
-              if (event.step === "complete") {
-                setAnalysis(event.data);
-                // 缓存到 localStorage
-                localStorage.setItem(`analysis_${taskId}`, JSON.stringify(event.data));
-              } else if (event.step === "error") {
-                setError(event.data.message);
-              }
-            } catch {}
-          }
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          setError(errData.error || "分析失败");
+          return;
         }
+        const data = await res.json();
+        setAnalysis(data);
+        localStorage.setItem(cacheKey, JSON.stringify(data));
       } catch (err) {
         setError(err instanceof Error ? err.message : "分析失败");
       } finally {
