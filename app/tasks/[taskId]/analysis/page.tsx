@@ -57,6 +57,7 @@ export default function AnalysisPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasCompetitorInfo, setHasCompetitorInfo] = useState(false);
+  const [taskType, setTaskType] = useState<string>("");
 
   useEffect(() => {
     const fetchAnalysis = async () => {
@@ -69,6 +70,7 @@ export default function AnalysisPage() {
           setHasCompetitorInfo(true);
         }
         productTitle = taskData.product?.title || "";
+        setTaskType(taskData.task?.taskType || "");
       } catch {}
 
       // 检查 localStorage 缓存，key 带上商品标题防止串号
@@ -282,7 +284,7 @@ export default function AnalysisPage() {
       </Card>
 
       {/* 历史素材数据分析 */}
-      {analysis.historicalAnalysis?.hasHistory && (
+      {analysis.historicalAnalysis?.hasHistory && taskType !== "new_product" && (
         <Card className="border-amber-200 bg-amber-50/50">
           <CardHeader>
             <CardTitle className="text-base">📈 历史素材数据分析</CardTitle>
