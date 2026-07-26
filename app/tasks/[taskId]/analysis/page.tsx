@@ -60,17 +60,19 @@ export default function AnalysisPage() {
 
   useEffect(() => {
     const fetchAnalysis = async () => {
-      // 先获取任务信息，判断是否有竞品信息
+      // 先获取任务信息，判断商品标题和是否有竞品信息
+      let productTitle = "";
       try {
         const taskRes = await fetch(`/api/tasks/${taskId}`);
         const taskData = await taskRes.json();
         if (taskData.product?.competitorMaterials) {
           setHasCompetitorInfo(true);
         }
+        productTitle = taskData.product?.title || "";
       } catch {}
 
-      // 先检查 localStorage 是否有缓存的分析结果
-      const cacheKey = `analysis_${taskId}`;
+      // 检查 localStorage 缓存，key 带上商品标题防止串号
+      const cacheKey = `analysis_${taskId}_${productTitle}`;
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
         try {
@@ -79,6 +81,8 @@ export default function AnalysisPage() {
           return;
         } catch {}
       }
+      // 清除旧格式缓存（不带商品标题的）
+      localStorage.removeItem(`analysis_${taskId}`);
 
       try {
         const res = await fetch(`/api/tasks/${taskId}/analyze`, { method: "POST" });
