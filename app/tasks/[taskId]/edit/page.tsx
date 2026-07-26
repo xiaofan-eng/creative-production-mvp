@@ -62,6 +62,23 @@ export default function EditTaskPage() {
       if (!res.ok) throw new Error("上传失败");
       const data = await res.json();
       setUploadedImages(prev => [...prev, ...data.files]);
+
+      // 自动调用 GLM-5V-Turbo 识别商品图，追加到商品详情
+      const allImages = [...uploadedImages, ...data.files];
+      const ocrRes = await fetch("/api/ocr-product", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrls: allImages.map((img: { url: string }) => img.url) }),
+      });
+      if (ocrRes.ok) {
+        const ocrData = await ocrRes.json();
+        if (ocrData.result) {
+          setDetail(prev => prev
+            ? prev + "\n\n---图片识别内容---\n" + ocrData.result
+            : ocrData.result
+          );
+        }
+      }
     } catch {
       alert("图片上传失败，请重试");
     } finally {
