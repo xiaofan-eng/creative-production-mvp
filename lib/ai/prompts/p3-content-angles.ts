@@ -22,12 +22,63 @@ export const P3_SYSTEM_PROMPT = `你是一个电商内容创意专家。你的�
 ## 输出要求
 严格按 schema 输出 JSON。`;
 
-export function formatP3Input(sellingPoints: Array<{
-  rank: number;
-  point: string;
-  targetAudience: string;
-  scenario: string;
-}>, category: string, historicalAngles?: Array<{ angle: string; feedback: string }> | null) {
+export const P3_SYSTEM_PROMPT_RELAUNCH = `你是一个电商内容创意专家。当前任务类型是【老品重推】，商品已有历史内容，需要换新角度再次触达用户。
+
+## 核心原则：探索新角度
+- 历史已用过的角度（无论效果好坏）都要换新切入点，不能重复同一个方向
+- 已采用的角度：说明该方向已被验证有效，但本次必须换人群/换痛点/换风格，避免用户看到"又是这个"的疲劳感
+- 已弃用的角度：绝对规避
+- 优先寻找历史从未尝试过的人群、痛点、场景
+
+## 区分度要求
+3 个角度必须覆盖历史未出现过的方向，每个角度从以下三个维度至少选一个创新：
+- 面向新人群（历史内容没覆盖过的细分人群）
+- 切入新痛点（历史内容没有强调过的使用痛点）
+- 采用新风格（历史内容没用过的表达方式）
+
+## 规则
+- 每个角度都要能独立成为一组完整内容
+- 明确说明与历史角度的差异化在哪里
+- 角度要具体到可以指导脚本写作
+
+## 输出要求
+严格按 schema 输出 JSON。`;
+
+export const P3_SYSTEM_PROMPT_LOW_PERFORMANCE = `你是一个电商内容创意专家。当前任务类型是【素材表现差】，历史内容效果不佳，需要针对性改进。
+
+## 核心原则：规避失败、强化成功
+- 低CTR角度（CTR < 2%）或被弃用的角度：必须找出失败原因，彻底换方向，不做小修小补
+- 已采用且CTR较高的角度：延续成功逻辑，可在同一方向上用不同切入点强化
+- 已修改过的角度：用户的修改方向就是真实诉求，新角度要体现这个方向
+
+## 失败分析要求
+生成新角度前，必须先明确：历史哪些方向失败了（原因是什么）、哪些有成功迹象（需放大什么）
+
+## 区分度要求
+3 个角度中：
+- 至少 1 个：延续历史有效方向，换新切入点强化
+- 至少 1 个：完全规避历史失败方向，开辟全新角度
+- 至少 1 个：结合用户修改反馈，精准对应用户真实需求
+
+## 规则
+- 每个角度都要能独立成为一组完整内容
+- 失败的角度绝对不能以任何变体形式出现
+- 角度要具体到可以指导脚本写作
+
+## 输出要求
+严格按 schema 输出 JSON。`;
+
+export function formatP3Input(
+  sellingPoints: Array<{
+    rank: number;
+    point: string;
+    targetAudience: string;
+    scenario: string;
+  }>,
+  category: string,
+  historicalAngles?: Array<{ angle: string; feedback: string }> | null,
+  taskType?: string | null
+) {
   let input = `基于以下优先卖点，生成 3 个差异化内容角度：
 
 ## 商品类目
@@ -37,11 +88,24 @@ ${category}
 ${sellingPoints.map(sp => `排名 ${sp.rank}: ${sp.point}（面向：${sp.targetAudience}，场景：${sp.scenario}）`).join("\n")}`;
 
   if (historicalAngles && historicalAngles.length > 0) {
-    input += `\n\n## 历史反馈记录（必须参考）
+    if (taskType === "relaunch") {
+      input += `\n\n## 历史已用角度（必须换新方向，不得重复）
+${historicalAngles.map(h => `- 角度「${h.angle}」：${h.feedback}`).join("\n")}
+
+要求：以上历史角度均已被用过，本次必须生成全新的人群/痛点/风格方向。请说明每个新角度与历史的差异化在哪里。`;
+    } else if (taskType === "low_performance") {
+      input += `\n\n## 历史表现记录（必须基于此分析优化方向）
+${historicalAngles.map(h => `- 角度「${h.angle}」：${h.feedback}`).join("\n")}
+
+要求：先分析哪些角度失败（原因）、哪些有效（成功逻辑），再据此生成3个改进角度：规避失败方向、强化有效方向、体现用户修改意图。`;
+    } else {
+      input += `\n\n## 历史反馈记录（必须参考）
 ${historicalAngles.map(h => `- 角度「${h.angle}」：${h.feedback}`).join("\n")}
 
 基于以上历史数据，生成的角度需要：避开已弃用方向、延续采用方向的成功逻辑（但换新切入点）、结合数据表现调整策略。`;
+    }
   }
 
   return input;
 }
+

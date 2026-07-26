@@ -12,12 +12,12 @@ import {
 import type { ProductProfile, SellingPoints, ContentAngles, Script, ImageBrief, Storyboard, RiskCheck } from "./schemas";
 import { P1_SYSTEM_PROMPT, formatP1Input } from "./prompts/p1-structurize";
 import { P2_SYSTEM_PROMPT, formatP2Input } from "./prompts/p2-selling-points";
-import { P3_SYSTEM_PROMPT, formatP3Input } from "./prompts/p3-content-angles";
+import { P3_SYSTEM_PROMPT, P3_SYSTEM_PROMPT_RELAUNCH, P3_SYSTEM_PROMPT_LOW_PERFORMANCE, formatP3Input } from "./prompts/p3-content-angles";
 import { P4_SYSTEM_PROMPT, formatP4Input } from "./prompts/p4-script";
 import { P5_SYSTEM_PROMPT, formatP5Input } from "./prompts/p5-image-brief";
 import { P6_SYSTEM_PROMPT, formatP6Input } from "./prompts/p6-storyboard";
 import { P7_SYSTEM_PROMPT, formatP7Input } from "./prompts/p7-risk-check";
-import { P8_SYSTEM_PROMPT, formatP8Input } from "./prompts/p8-history";
+import { P8_SYSTEM_PROMPT, P8_SYSTEM_PROMPT_RELAUNCH, P8_SYSTEM_PROMPT_LOW_PERFORMANCE, formatP8Input } from "./prompts/p8-history";
 
 export interface ProductInput {
   title: string;
@@ -56,7 +56,8 @@ export async function runPromptChain(
     impression?: number;
     generateType?: string;
   }> | null,
-  generateType?: string | null // "script" | "image_brief" | "storyboard" | null (all)
+  generateType?: string | null, // "script" | "image_brief" | "storyboard" | null (all)
+  taskType?: string | null // "new_product" | "relaunch" | "low_performance"
 ): Promise<GenerationResult> {
   // Step 1: P1 商品结构化
   onProgress(1, "商品信息结构化");
@@ -92,13 +93,18 @@ export async function runPromptChain(
     return { angle: fb.contentAngle, feedback: parts.join("，") };
   }) || null;
 
+  // 根据 taskType 选择对应的 P3 system prompt
+  const p3SystemPrompt = taskType === "relaunch" ? P3_SYSTEM_PROMPT_RELAUNCH
+    : taskType === "low_performance" ? P3_SYSTEM_PROMPT_LOW_PERFORMANCE
+    : P3_SYSTEM_PROMPT;
+
   onProgress(3, "内容角度生成");
   const { object: contentAngles } = await generateObject({
     model,
     mode: "json",
     schema: contentAnglesSchema,
-    system: P3_SYSTEM_PROMPT,
-    prompt: formatP3Input(sellingPoints.rankedPoints, profile.category, historicalAngles),
+    system: p3SystemPrompt,
+    prompt: formatP3Input(sellingPoints.rankedPoints, profile.category, historicalAngles, taskType),
   });
   onProgress(3, "内容角度生成", contentAngles);
 
@@ -203,12 +209,18 @@ export async function runPromptChain(
 
   // Step 8: P8 历史依据
   onProgress(6, "生成推荐理由");
+  // 根据 taskType 选择对应的 P8 system prompt
+  const p8SystemPrompt = taskType === "relaunch" ? P8_SYSTEM_PROMPT_RELAUNCH
+    : taskType === "low_performance" ? P8_SYSTEM_PROMPT_LOW_PERFORMANCE
+    : P8_SYSTEM_PROMPT;
+
   const { text: reasonsText } = await generateText({
     model,
-    system: P8_SYSTEM_PROMPT,
+    system: p8SystemPrompt,
     prompt: formatP8Input(
       packages.map(pkg => ({ angle: pkg.contentAngle, scriptTitle: pkg.script.title })),
-      historicalFeedback
+      historicalFeedback,
+      taskType
     ),
   });
 

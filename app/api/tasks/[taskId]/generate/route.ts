@@ -108,8 +108,8 @@ export async function POST(
           if (historicalFeedback.length === 0) historicalFeedback = null;
         }
 
-        // 运行 Prompt Chain
-        const result = await runPromptChain(product, sendEvent, historicalFeedback, generateType);
+        // 运行 Prompt Chain，传入 taskType 以区分老品重推/素材表现差的生成策略
+        const result = await runPromptChain(product, sendEvent, historicalFeedback, generateType, task.taskType);
 
         // 保存商品画像
         db.insert(productProfiles).values({
