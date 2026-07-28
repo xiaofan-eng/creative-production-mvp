@@ -3,6 +3,17 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 
+async function uploadToImgbb(base64: string): Promise<string> {
+  const body = new URLSearchParams({ image: base64 });
+  const res = await fetch(
+    `https://api.imgbb.com/1/upload?key=${process.env.IMGBB_API_KEY}`,
+    { method: "POST", body }
+  );
+  if (!res.ok) throw new Error(`imgbb upload failed: ${res.status}`);
+  const data = await res.json();
+  return data.data.url as string;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -18,12 +29,13 @@ export async function POST(req: NextRequest) {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
       const base64 = buffer.toString("base64");
-      const ext = path.extname(file.name).slice(1).toLowerCase();
-      const mimeType = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
+
+      // 上传到 imgbb，获取 https URL 供 GLM 视觉接口使用
+      const httpsUrl = await uploadToImgbb(base64);
 
       uploadedFiles.push({
         name: file.name,
-        url: `data:${mimeType};base64,${base64}`,
+        url: httpsUrl,
         size: file.size,
       });
     }
