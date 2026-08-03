@@ -15,6 +15,7 @@ if (!fs.existsSync(dataDir)) {
 const sqlite = new Database(dbPath);
 sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("foreign_keys = ON");
+sqlite.pragma("busy_timeout = 5000"); // build 时多 worker 并发访问时等待而非立即报错
 
 export const db = drizzle(sqlite, { schema });
 
@@ -98,5 +99,5 @@ sqlite.exec(`
   );
 `);
 
-// 补充 overall_risk_level 字段（幂等，已有列时静默跳过）
-try { sqlite.exec(`ALTER TABLE content_versions ADD COLUMN overall_risk_level TEXT;`); } catch { /* already exists */ }
+// 补充 overall_risk_level 字段（幂等，已有列时静默跳过，build 时多 worker 也不会 BUSY）
+try { sqlite.exec(`ALTER TABLE content_versions ADD COLUMN overall_risk_level TEXT;`); } catch { /* already exists or busy */ }
