@@ -143,6 +143,7 @@ export async function POST(
                   : result.riskCheck.riskFlags // 如果过滤后为空，把所有风险都分配
               );
               updateData.manualCheckItems = JSON.stringify(result.riskCheck.manualCheckItems);
+              updateData.overallRiskLevel = result.riskCheck.overallRiskLevel;
               db.update(contentVersions).set(updateData).where(eq(contentVersions.id, existing.id)).run();
             } else {
               // 没有对应 packageIndex 的旧记录，插入新记录
@@ -162,6 +163,7 @@ export async function POST(
                 ),
                 manualCheckItems: JSON.stringify(result.riskCheck.manualCheckItems),
                 recommendReason: pkg.recommendReason,
+                overallRiskLevel: result.riskCheck.overallRiskLevel,
               }).run();
             }
           }
@@ -183,6 +185,7 @@ export async function POST(
               riskFlags: JSON.stringify(filteredRisks.length > 0 ? filteredRisks : result.riskCheck.riskFlags),
               manualCheckItems: JSON.stringify(result.riskCheck.manualCheckItems),
               recommendReason: pkg.recommendReason,
+              overallRiskLevel: result.riskCheck.overallRiskLevel,
             }).run();
           }
         }

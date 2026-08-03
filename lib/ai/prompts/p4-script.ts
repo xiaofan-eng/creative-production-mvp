@@ -25,7 +25,7 @@ export function formatP4Input(angle: {
   targetAudience: string;
   painPoint: string;
   tone: string;
-}, sellingPoints: Array<{ point: string; evidence: string }>, productTitle: string) {
+}, sellingPoints: Array<{ point: string; evidence: string }>, productTitle: string, restrictions?: string[]) {
   return `为以下商品和内容角度写一条带货脚本：
 
 ## 商品
@@ -38,5 +38,10 @@ ${productTitle}
 - 表达风格：${angle.tone}
 
 ## 可用卖点及证据
-${sellingPoints.map(sp => `- ${sp.point}（证据：${sp.evidence}）`).join("\n")}`;
+${sellingPoints.map(sp => `- ${sp.point}（证据：${sp.evidence}）`).join("\n")}${restrictions && restrictions.length > 0 ? `
+
+## ⚠️ 合规限制（必须严格遵守）
+以下内容绝对不能出现在脚本中：
+${restrictions.map(r => `- ${r}`).join("\n")}
+请仅从商品真实可验证的功能和场景切入，不做任何功效承诺或违规宣称。` : ""}`;
 }

@@ -17,6 +17,7 @@ interface ContentPackageCardProps {
     riskFlags: string;
     manualCheckItems: string;
     recommendReason: string;
+    overallRiskLevel?: string | null;
     feedback?: Array<{ adoptionStatus: string; module?: string }>;
   };
   taskId: string;
@@ -218,9 +219,27 @@ export default function ContentPackageCard({ version: v, taskId, generateType }:
   const shouldShowScript = showScript && hasScriptContent;
   const shouldShowBrief = showBrief && hasBriefContent;
   const shouldShowStoryboard = showStoryboard && hasStoryboardContent;
+  const isHighRisk = v.overallRiskLevel === "high_risk";
 
   return (
     <div className="space-y-4">
+      {/* 高风险拦截提示 */}
+      {isHighRisk && (
+        <div className="rounded-lg border-2 border-red-400 bg-red-50 p-4">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">🚫</span>
+            <div>
+              <p className="font-semibold text-red-800 text-sm">高风险内容警告</p>
+              <p className="text-red-700 text-sm mt-1">
+                该方案包含平台违禁宣称（如绝对化效果承诺、未经验证的功效、量化减重承诺等），
+                不可直接发布。内容已从低风险角度重新生成，请仔细核查下方风险提示后再决定是否采用。
+              </p>
+              <p className="text-red-600 text-xs mt-2 font-medium">⚠️ 建议：直接采用前请删除或替换所有标注的高风险表述。</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 推荐理由 */}
       <Card>
         <CardHeader>
@@ -278,6 +297,7 @@ export default function ContentPackageCard({ version: v, taskId, generateType }:
             existingStatus={(() => { const s = v.feedback?.filter(f => f.module === "script").pop(); return (s?.adoptionStatus === "adopted" || s?.adoptionStatus === "rejected") ? s.adoptionStatus : undefined; })()}
             onContentSaved={handleScriptSaved}
             onRegenerate={regenerating === "script" ? undefined : () => handleRegenerate("script")}
+            disableAdopt={isHighRisk}
           />
           {regenerating === "script" && (
             <p className="text-sm text-blue-600 mt-2 animate-pulse">🔄 正在重新生成带货脚本...</p>
@@ -331,6 +351,7 @@ export default function ContentPackageCard({ version: v, taskId, generateType }:
             existingStatus={(() => { const s = v.feedback?.filter(f => f.module === "image_brief").pop(); return (s?.adoptionStatus === "adopted" || s?.adoptionStatus === "rejected") ? s.adoptionStatus : undefined; })()}
             onContentSaved={handleBriefSaved}
             onRegenerate={regenerating === "image_brief" ? undefined : () => handleRegenerate("image_brief")}
+            disableAdopt={isHighRisk}
           />
           {regenerating === "image_brief" && (
             <p className="text-sm text-blue-600 mt-2 animate-pulse">🔄 正在重新生成商品图Brief...</p>
@@ -442,6 +463,7 @@ export default function ContentPackageCard({ version: v, taskId, generateType }:
             existingStatus={(() => { const s = v.feedback?.filter(f => f.module === "storyboard").pop(); return (s?.adoptionStatus === "adopted" || s?.adoptionStatus === "rejected") ? s.adoptionStatus : undefined; })()}
             onContentSaved={handleStoryboardSaved}
             onRegenerate={regenerating === "storyboard" ? undefined : () => handleRegenerate("storyboard")}
+            disableAdopt={isHighRisk}
           />
           {regenerating === "storyboard" && (
             <p className="text-sm text-blue-600 mt-2 animate-pulse">🔄 正在重新生成短视频分镜...</p>

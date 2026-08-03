@@ -113,6 +113,10 @@ export async function runPromptChain(
     generateType === "image_brief" ? "商品图/封面Brief" :
     generateType === "storyboard" ? "短视频分镜" : "内容包（脚本/图Brief/分镜）";
   onProgress(4, `生成${typeLabel}`);
+
+  // 从 P1 提取的合规限制，注入 P4/P5/P6 prompt 作为生成约束
+  const restrictions = profile.restrictions || [];
+
   const packages = await Promise.all(
     contentAngles.angles.map(async (angle, index) => {
       const spForPrompt = sellingPoints.rankedPoints.map(sp => ({
@@ -128,7 +132,7 @@ export async function runPromptChain(
           mode: "json",
           schema: scriptSchema,
           system: P4_SYSTEM_PROMPT,
-          prompt: formatP4Input(angle, spForPrompt, product.title),
+          prompt: formatP4Input(angle, spForPrompt, product.title, restrictions),
         });
         script = object;
       }
@@ -145,7 +149,8 @@ export async function runPromptChain(
             angle,
             sellingPoints.rankedPoints.map(sp => ({ point: sp.point })),
             product.title,
-            product.productImages
+            product.productImages,
+            restrictions
           ),
         });
         imageBrief = object;
@@ -162,7 +167,8 @@ export async function runPromptChain(
           prompt: formatP6Input(
             script || { title: angle.angle, duration: "60秒", sections: [], factSources: [] },
             angle,
-            product.title
+            product.title,
+            restrictions
           ),
         });
         storyboard = object;

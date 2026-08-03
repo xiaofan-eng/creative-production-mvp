@@ -62,6 +62,7 @@ sqlite.exec(`
     risk_flags TEXT,
     manual_check_items TEXT,
     recommend_reason TEXT,
+    overall_risk_level TEXT,
     created_at TEXT NOT NULL
   );
 
@@ -96,3 +97,6 @@ sqlite.exec(`
     created_at TEXT NOT NULL
   );
 `);
+
+// 补充 overall_risk_level 字段（幂等，已有列时静默跳过）
+try { sqlite.exec(`ALTER TABLE content_versions ADD COLUMN overall_risk_level TEXT;`); } catch { /* already exists */ }

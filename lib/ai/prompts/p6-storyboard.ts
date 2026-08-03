@@ -23,7 +23,7 @@ export const P6_SYSTEM_PROMPT = `你是一个短视频分镜策划专家。你�
 export function formatP6Input(script: {
   title: string;
   sections: Array<{ type: string; content: string; duration: string }>;
-}, angle: { angle: string; tone: string }, productTitle: string) {
+}, angle: { angle: string; tone: string }, productTitle: string, restrictions?: string[]) {
   return `将以下脚本拆解为短视频分镜：
 
 ## 商品
@@ -33,5 +33,9 @@ ${productTitle}
 ${angle.angle}（风格：${angle.tone}）
 
 ## 脚本内容
-${script.sections.map(s => `[${s.type}] (${s.duration}) ${s.content}`).join("\n")}`;
+${script.sections.map(s => `[${s.type}] (${s.duration}) ${s.content}`).join("\n")}${restrictions && restrictions.length > 0 ? `
+
+## ⚠️ 合规限制（必须严格遵守）
+以下内容绝对不能出现在任何镜头的口播或画面中：
+${restrictions.map(r => `- ${r}`).join("\n")}` : ""}`;
 }

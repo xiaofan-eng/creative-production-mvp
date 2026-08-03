@@ -22,7 +22,7 @@ export function formatP5Input(angle: {
   angle: string;
   targetAudience: string;
   tone: string;
-}, sellingPoints: Array<{ point: string }>, productTitle: string, productImages?: string | null) {
+}, sellingPoints: Array<{ point: string }>, productTitle: string, productImages?: string | null, restrictions?: string[]) {
   return `为以下商品生成商品图/封面 Brief：
 
 ## 商品
@@ -36,5 +36,10 @@ ${productTitle}
 ## 核心卖点
 ${sellingPoints.map(sp => `- ${sp.point}`).join("\n")}
 
-${productImages ? `## 现有商品图描述\n${productImages}` : ""}`;
+${productImages ? `## 现有商品图描述\n${productImages}` : ""}${restrictions && restrictions.length > 0 ? `
+
+## ⚠️ 合规限制（必须严格遵守）
+以下文案或视觉元素绝对不能出现：
+${restrictions.map(r => `- ${r}`).join("\n")}
+图片文案请仅展示商品真实可验证的特性，不做任何违规宣称。` : ""}`;
 }

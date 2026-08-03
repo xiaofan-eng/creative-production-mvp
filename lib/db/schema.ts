@@ -46,6 +46,7 @@ export const contentVersions = sqliteTable("content_versions", {
   riskFlags: text("risk_flags"), // JSON
   manualCheckItems: text("manual_check_items"), // JSON
   recommendReason: text("recommend_reason"),
+  overallRiskLevel: text("overall_risk_level"), // "safe" | "caution" | "high_risk"
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 

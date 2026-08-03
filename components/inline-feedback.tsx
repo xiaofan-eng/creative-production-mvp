@@ -15,6 +15,8 @@ interface InlineFeedbackProps {
   onContentSaved?: (newContent: string) => void;
   /** 重新生成回调 */
   onRegenerate?: () => void;
+  /** 高风险时禁用"采用"按钮 */
+  disableAdopt?: boolean;
 }
 
 const statusOptions = [
@@ -23,7 +25,7 @@ const statusOptions = [
   { value: "rejected", label: "❌ 未采用", className: "border-red-300 bg-red-50 text-red-700 hover:bg-red-100" },
 ];
 
-export default function InlineFeedback({ contentVersionId, module, taskId, existingStatus, content, onContentSaved, onRegenerate }: InlineFeedbackProps) {
+export default function InlineFeedback({ contentVersionId, module, taskId, existingStatus, content, onContentSaved, onRegenerate, disableAdopt }: InlineFeedbackProps) {
   const [status, setStatus] = useState<string | null>(existingStatus || null);
   const [editing, setEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(content);
@@ -35,6 +37,7 @@ export default function InlineFeedback({ contentVersionId, module, taskId, exist
 
   const handleSelect = async (value: string) => {
     if (saved) return;
+    if (value === "adopted" && disableAdopt) return; // 高风险时禁用采用
     setStatus(value);
 
     if (value === "adopted") {
@@ -126,11 +129,12 @@ export default function InlineFeedback({ contentVersionId, module, taskId, exist
             key={opt.value}
             type="button"
             onClick={() => handleSelect(opt.value)}
-            disabled={saved}
+            disabled={saved || (opt.value === "adopted" && disableAdopt)}
+            title={opt.value === "adopted" && disableAdopt ? "高风险内容：请修改后再采用" : undefined}
             className={`px-3 py-1 rounded-full text-xs border transition-all ${
               status === opt.value
                 ? opt.className + " ring-1 ring-offset-1"
-                : saved
+                : saved || (opt.value === "adopted" && disableAdopt)
                 ? "border-border text-muted-foreground opacity-50 cursor-not-allowed"
                 : "border-border hover:border-primary/50"
             }`}
