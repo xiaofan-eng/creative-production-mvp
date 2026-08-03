@@ -29,6 +29,7 @@ export default function InlineFeedback({ contentVersionId, module, taskId, exist
   const [editedContent, setEditedContent] = useState(content);
   const [showRejectNote, setShowRejectNote] = useState(false);
   const [rejectNote, setRejectNote] = useState("");
+  const [rejectReason, setRejectReason] = useState<string>("other");
   const [saved, setSaved] = useState(!!existingStatus);
   const [saving, setSaving] = useState(false);
 
@@ -102,7 +103,7 @@ export default function InlineFeedback({ contentVersionId, module, taskId, exist
           contentVersionId,
           adoptionStatus: "rejected",
           editNote: rejectNote || null,
-          rejectionReason: "other",
+          rejectionReason: rejectReason || "other",
           module,
         }),
       });
@@ -172,17 +173,41 @@ export default function InlineFeedback({ contentVersionId, module, taskId, exist
 
       {/* 未采用原因 */}
       {showRejectNote && !saved && (
-        <div className="mt-3 flex gap-2">
-          <Textarea
-            placeholder="未采用的原因？（如：卖点不准、太泛、不可执行等）"
-            value={rejectNote}
-            onChange={e => setRejectNote(e.target.value)}
-            rows={2}
-            className="text-sm"
-          />
-          <Button size="sm" onClick={handleRejectSubmit} disabled={saving} className="self-end">
-            {saving ? "..." : "保存"}
-          </Button>
+        <div className="mt-3 space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              { value: "selling_point_inaccurate", label: "卖点不准" },
+              { value: "too_generic", label: "太泛/没特点" },
+              { value: "high_risk", label: "风险太高" },
+              { value: "not_executable", label: "不可执行" },
+              { value: "other", label: "其他" },
+            ].map(r => (
+              <button
+                key={r.value}
+                type="button"
+                onClick={() => setRejectReason(r.value)}
+                className={`px-2.5 py-1 rounded-full text-xs border transition-all ${
+                  rejectReason === r.value
+                    ? "border-red-400 bg-red-50 text-red-700"
+                    : "border-border hover:border-red-200"
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Textarea
+              placeholder="补充说明（可选）"
+              value={rejectNote}
+              onChange={e => setRejectNote(e.target.value)}
+              rows={2}
+              className="text-sm"
+            />
+            <Button size="sm" onClick={handleRejectSubmit} disabled={saving} className="self-end">
+              {saving ? "..." : "保存"}
+            </Button>
+          </div>
         </div>
       )}
     </div>
