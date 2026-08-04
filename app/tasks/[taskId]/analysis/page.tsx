@@ -38,6 +38,11 @@ interface Analysis {
     summary: string;
     keyDirection: string;
     reasons: string[];
+    suggestedAngles?: Array<{
+      angle: string;
+      targetAudience: string;
+      painPoint: string;
+    }>;
   };
   historicalAnalysis?: {
     hasHistory: boolean;
@@ -258,17 +263,38 @@ export default function AnalysisPage() {
       </Card>
       )}
 
-      {/* 推荐理由 */}
+      {/* 推荐策略 */}
       <Card className="border-primary/30 bg-primary/5">
         <CardHeader>
           <CardTitle className="text-base">💡 推荐策略</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm font-medium">{analysis.recommendation.summary}</p>
-          <div className="p-3 bg-white rounded-lg border">
-            <p className="text-xs text-muted-foreground mb-1">核心内容方向</p>
-            <p className="text-sm font-medium">{analysis.recommendation.keyDirection}</p>
-          </div>
+
+          {/* 预览内容角度 */}
+          {analysis.recommendation.suggestedAngles && analysis.recommendation.suggestedAngles.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">预计生成的三个内容角度：</p>
+              {analysis.recommendation.suggestedAngles.map((a, i) => (
+                <div key={i} className="p-3 bg-white rounded-lg border flex items-start gap-3">
+                  <span className="text-xs font-bold text-primary bg-primary/10 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{a.angle}</p>
+                    <div className="flex gap-3 mt-1 flex-wrap">
+                      <span className="text-xs text-muted-foreground">👥 {a.targetAudience}</span>
+                      <span className="text-xs text-muted-foreground">🎯 {a.painPoint}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-3 bg-white rounded-lg border">
+              <p className="text-xs text-muted-foreground mb-1">核心内容方向</p>
+              <p className="text-sm font-medium">{analysis.recommendation.keyDirection}</p>
+            </div>
+          )}
+
           <div>
             <p className="text-xs text-muted-foreground mb-2">推荐理由：</p>
             <ul className="space-y-1">
