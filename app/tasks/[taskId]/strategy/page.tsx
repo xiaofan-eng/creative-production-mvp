@@ -77,6 +77,9 @@ export default function StrategyPage() {
           contentGoal: contentGoal || null,
         }),
       });
+      // 策略配置变更后清除 analysis 缓存，确保分析报告重新生成
+      const keysToRemove = Object.keys(localStorage).filter(k => k.startsWith(`analysis_${taskId}`));
+      keysToRemove.forEach(k => localStorage.removeItem(k));
       router.push(`/tasks/${taskId}/analysis`);
     } catch {
       alert("保存失败，请重试");
