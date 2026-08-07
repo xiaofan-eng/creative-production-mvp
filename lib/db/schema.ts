@@ -7,6 +7,7 @@ export const tasks = sqliteTable("tasks", {
   productId: integer("product_id").notNull(),
   status: text("status", { enum: ["pending", "generating", "completed", "failed"] }).notNull().default("pending"),
   generateType: text("generate_type"), // "script" | "image_brief" | "storyboard" | null
+  contentGoal: text("content_goal"), // "mind_penetration" | "business_penetration" | null
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
@@ -47,6 +48,8 @@ export const contentVersions = sqliteTable("content_versions", {
   manualCheckItems: text("manual_check_items"), // JSON
   recommendReason: text("recommend_reason"),
   overallRiskLevel: text("overall_risk_level"), // "safe" | "caution" | "high_risk"
+  mindHook: text("mind_hook"), // "冲突感" | "熟悉感" | "陌生感"
+  mindValue: text("mind_value"), // "满足感" | "成就感" | "参与感"
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 

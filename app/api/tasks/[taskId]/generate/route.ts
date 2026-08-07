@@ -108,8 +108,8 @@ export async function POST(
           if (historicalFeedback.length === 0) historicalFeedback = null;
         }
 
-        // 运行 Prompt Chain，传入 taskType 以区分老品重推/素材表现差的生成策略
-        const result = await runPromptChain(product, sendEvent, historicalFeedback, generateType, task.taskType);
+        // 运行 Prompt Chain，传入 taskType 和 contentGoal
+        const result = await runPromptChain(product, sendEvent, historicalFeedback, generateType, task.taskType, task.contentGoal);
 
         // 保存商品画像
         db.insert(productProfiles).values({
@@ -144,6 +144,8 @@ export async function POST(
               );
               updateData.manualCheckItems = JSON.stringify(result.riskCheck.manualCheckItems);
               updateData.overallRiskLevel = result.riskCheck.overallRiskLevel;
+              if (pkg.mindHook) updateData.mindHook = pkg.mindHook;
+              if (pkg.mindValue) updateData.mindValue = pkg.mindValue;
               db.update(contentVersions).set(updateData).where(eq(contentVersions.id, existing.id)).run();
             } else {
               // 没有对应 packageIndex 的旧记录，插入新记录
@@ -164,6 +166,8 @@ export async function POST(
                 manualCheckItems: JSON.stringify(result.riskCheck.manualCheckItems),
                 recommendReason: pkg.recommendReason,
                 overallRiskLevel: result.riskCheck.overallRiskLevel,
+                mindHook: pkg.mindHook || null,
+                mindValue: pkg.mindValue || null,
               }).run();
             }
           }
@@ -186,6 +190,8 @@ export async function POST(
               manualCheckItems: JSON.stringify(result.riskCheck.manualCheckItems),
               recommendReason: pkg.recommendReason,
               overallRiskLevel: result.riskCheck.overallRiskLevel,
+              mindHook: pkg.mindHook || null,
+              mindValue: pkg.mindValue || null,
             }).run();
           }
         }

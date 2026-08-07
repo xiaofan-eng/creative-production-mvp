@@ -27,6 +27,7 @@ sqlite.exec(`
     product_id INTEGER NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending',
     generate_type TEXT,
+    content_goal TEXT,
     created_at TEXT NOT NULL
   );
 
@@ -99,5 +100,8 @@ sqlite.exec(`
   );
 `);
 
-// 补充 overall_risk_level 字段（幂等，已有列时静默跳过，build 时多 worker 也不会 BUSY）
-try { sqlite.exec(`ALTER TABLE content_versions ADD COLUMN overall_risk_level TEXT;`); } catch { /* already exists or busy */ }
+// 补充新字段（幂等，已有列时静默跳过）
+try { sqlite.exec(`ALTER TABLE content_versions ADD COLUMN overall_risk_level TEXT;`); } catch { /* already exists */ }
+try { sqlite.exec(`ALTER TABLE tasks ADD COLUMN content_goal TEXT;`); } catch { /* already exists */ }
+try { sqlite.exec(`ALTER TABLE content_versions ADD COLUMN mind_hook TEXT;`); } catch { /* already exists */ }
+try { sqlite.exec(`ALTER TABLE content_versions ADD COLUMN mind_value TEXT;`); } catch { /* already exists */ }

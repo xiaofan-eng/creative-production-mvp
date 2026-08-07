@@ -9,7 +9,7 @@ import { desc, eq } from "drizzle-orm";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { taskType, title, detail, price, targetAudience, productImages, competitorMaterials } = body;
+    const { taskType, title, detail, price, targetAudience, productImages, competitorMaterials, contentGoal } = body;
 
     if (!taskType || !title || !detail) {
       return NextResponse.json({ error: "缺少必填字段" }, { status: 400 });
@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
       taskType,
       productId: product.id,
       status: "pending",
+      contentGoal: contentGoal || null,
     }).returning();
 
     const [task] = taskResult.all();

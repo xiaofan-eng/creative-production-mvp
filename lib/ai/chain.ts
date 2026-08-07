@@ -34,6 +34,8 @@ export interface GenerationResult {
   contentAngles: ContentAngles;
   packages: Array<{
     contentAngle: string;
+    mindHook: string | null;
+    mindValue: string | null;
     script: Script;
     imageBrief: ImageBrief;
     storyboard: Storyboard;
@@ -57,7 +59,8 @@ export async function runPromptChain(
     generateType?: string;
   }> | null,
   generateType?: string | null, // "script" | "image_brief" | "storyboard" | null (all)
-  taskType?: string | null // "new_product" | "relaunch" | "low_performance"
+  taskType?: string | null, // "new_product" | "relaunch" | "low_performance"
+  contentGoal?: string | null  // "mind_penetration" | "business_penetration" | null
 ): Promise<GenerationResult> {
   // Step 1: P1 商品结构化
   onProgress(1, "商品信息结构化");
@@ -104,7 +107,7 @@ export async function runPromptChain(
     mode: "json",
     schema: contentAnglesSchema,
     system: p3SystemPrompt,
-    prompt: formatP3Input(sellingPoints.rankedPoints, profile.category, historicalAngles, taskType),
+    prompt: formatP3Input(sellingPoints.rankedPoints, profile.category, historicalAngles, taskType, contentGoal),
   });
   onProgress(3, "内容角度生成", contentAngles);
 
@@ -176,6 +179,8 @@ export async function runPromptChain(
 
       return {
         contentAngle: angle.angle,
+        mindHook: (angle as { mindHook?: string }).mindHook || null,
+        mindValue: (angle as { mindValue?: string }).mindValue || null,
         script: script || { title: "", duration: "", sections: [], factSources: [] },
         imageBrief: imageBrief || { composition: "", mainVisual: "", copywriting: "", elements: [], colorScheme: "", taboos: [], sellingPointConnection: "" },
         storyboard: storyboard || { totalDuration: "", shots: [] },

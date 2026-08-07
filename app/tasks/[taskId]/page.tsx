@@ -27,6 +27,8 @@ interface TaskData {
     manualCheckItems: string;
     recommendReason: string;
     overallRiskLevel?: string | null;
+    mindHook?: string | null;
+    mindValue?: string | null;
     feedback: Array<{ adoptionStatus: string; editNote?: string; rejectionReason?: string; module?: string }>;
     performance: Array<{ impression?: number; click?: number; ctr?: number; conversion?: number }>;
   }>;

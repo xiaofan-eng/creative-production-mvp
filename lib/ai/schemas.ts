@@ -34,6 +34,8 @@ export const contentAnglesSchema = z.object({
     painPoint: z.string().describe("切入的痛点/需求"),
     tone: z.string().describe("表达语气/风格"),
     differentiator: z.string().describe("与其他角度的区分点"),
+    mindHook: z.enum(["冲突感", "熟悉感", "陌生感"]).describe("面子钩子：开头吸引眼球的方式"),
+    mindValue: z.enum(["满足感", "成就感", "参与感"]).describe("里子价值：内容传递的深层情绪价值"),
   })).length(3).describe("3个差异化内容角度"),
 });
 

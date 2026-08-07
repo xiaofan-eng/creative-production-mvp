@@ -18,6 +18,8 @@ interface ContentPackageCardProps {
     manualCheckItems: string;
     recommendReason: string;
     overallRiskLevel?: string | null;
+    mindHook?: string | null;
+    mindValue?: string | null;
     feedback?: Array<{ adoptionStatus: string; module?: string }>;
   };
   taskId: string;
@@ -245,16 +247,27 @@ export default function ContentPackageCard({ version: v, taskId, generateType }:
         <CardHeader>
           <CardTitle className="text-base">💡 推荐理由</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          {(v.mindHook || v.mindValue) && (
+            <div className="flex gap-2 flex-wrap">
+              {v.mindHook && (
+                <span className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                  面子钩子：{v.mindHook}
+                </span>
+              )}
+              {v.mindValue && (
+                <span className="text-xs px-2 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                  里子价值：{v.mindValue}
+                </span>
+              )}
+            </div>
+          )}
           <p className="text-sm">{
             (() => {
               let text = v.recommendReason || "";
-              // 去掉开头的编号如 "1." "**1. xxx**" 等
               text = text.replace(/^\*{0,2}\d+[\.\、\)）]\s*/, "");
-              // 去掉 "角度名称** – **推荐理由：" 前缀
               const reasonMatch = text.match(/推荐理由[：:]\s*\*{0,2}\s*([\s\S]*)/);
               if (reasonMatch) text = reasonMatch[1];
-              // 去掉残留的 ** 标记
               text = text.replace(/\*{2}/g, "").trim();
               return text || "基于商品卖点和目标人群匹配度推荐此方案。";
             })()
