@@ -7,6 +7,10 @@ export const P8_SYSTEM_PROMPT = `你是一个电商内容优化专家。你的�
 - 如果历史有弃用记录，说明当前方案如何规避了那个方向
 - 如果历史有修改记录，说明当前方案如何体现了用户的修改意图
 - 如果没有历史记录，基于商品本身分析推荐理由
+- 如果提供了内容策略（TONBS/心智钩子/KPI目标），推荐理由必须体现：
+  * 该方案如何命中 TONBS 中的用户场景、需求或障碍
+  * 该方案的心智钩子类型与里子价值如何服务目标用户
+  * 该方案如何推动 KPI 目标（心智渗透或生意渗透）
 - 不夸大因果关系，只说"相关表现"而非"导致/证明"
 - 推荐理由要具体，不要空话
 
@@ -50,7 +54,7 @@ export const P8_SYSTEM_PROMPT_LOW_PERFORMANCE = `你是一个电商内容优化�
 直接输出编号列表，无前言，无标签。`;
 
 export function formatP8Input(
-  packages: Array<{ angle: string; scriptTitle: string }>,
+  packages: Array<{ angle: string; scriptTitle: string; mindHook?: string | null; mindValue?: string | null }>,
   historicalFeedback?: Array<{
     contentAngle: string;
     adoptionStatus: string;
@@ -60,12 +64,27 @@ export function formatP8Input(
     impression?: number;
     generateType?: string;
   }> | null,
-  taskType?: string | null
+  taskType?: string | null,
+  strategyContext?: {
+    contentGoal?: string | null;
+    tonbsUserGoal?: string | null;
+    tonbsScene?: string | null;
+    tonbsNeed?: string | null;
+    tonbsBarrier?: string | null;
+    tonbsSolution?: string | null;
+    preferMindHook?: string | null;
+    preferMindValue?: string | null;
+  } | null
 ) {
   let input = `请为以下 ${packages.length} 组内容包生成推荐理由：
 
 ## 当前内容包
-${packages.map((pkg, i) => `${i + 1}. 角度：${pkg.angle}，脚本：${pkg.scriptTitle}`).join("\n")}`;
+${packages.map((pkg, i) => {
+  let line = `${i + 1}. 角度：${pkg.angle}，脚本：${pkg.scriptTitle}`;
+  if (pkg.mindHook) line += `，面子钩子：${pkg.mindHook}`;
+  if (pkg.mindValue) line += `，里子价值：${pkg.mindValue}`;
+  return line;
+}).join("\n")}`;
 
   if (historicalFeedback && historicalFeedback.length > 0) {
     if (taskType === "relaunch") {
@@ -110,6 +129,37 @@ ${historicalFeedback.map((fb, i) => {
     }
   } else {
     input += `\n\n暂无历史反馈记录，请基于商品分析和内容角度本身给出推荐理由。`;
+  }
+
+  // 注入内容策略上下文
+  if (strategyContext) {
+    const { contentGoal, tonbsUserGoal, tonbsScene, tonbsNeed, tonbsBarrier, tonbsSolution, preferMindHook, preferMindValue } = strategyContext;
+    const hasTonbs = tonbsUserGoal || tonbsScene || tonbsNeed || tonbsBarrier || tonbsSolution;
+    const hasHook = preferMindHook || preferMindValue;
+    if (hasTonbs || hasHook || contentGoal) {
+      input += `\n\n## 内容策略配置（必须体现在推荐理由中）`;
+      if (contentGoal) {
+        const goalLabel = contentGoal === "mind_penetration"
+          ? "心智渗透（让用户记住品类/场景，建立品牌认知）"
+          : "生意渗透（推动转化/加购/复购）";
+        input += `\nKPI目标：${goalLabel}`;
+        input += `\n→ 推荐理由中需说明该方案如何推动上述目标`;
+      }
+      if (hasTonbs) {
+        input += `\nTONBS用户洞察：`;
+        if (tonbsUserGoal) input += `\n  T 用户目标：${tonbsUserGoal}`;
+        if (tonbsScene) input += `\n  O 用户场景：${tonbsScene}`;
+        if (tonbsNeed) input += `\n  N 用户需求：${tonbsNeed}`;
+        if (tonbsBarrier) input += `\n  B 用户障碍：${tonbsBarrier}`;
+        if (tonbsSolution) input += `\n  S 更优方案：${tonbsSolution}`;
+        input += `\n→ 推荐理由中需说明该方案如何命中以上用户场景和需求`;
+      }
+      if (hasHook) {
+        if (preferMindHook) input += `\n偏好面子钩子：${preferMindHook}`;
+        if (preferMindValue) input += `\n偏好里子价值：${preferMindValue}`;
+        input += `\n→ 推荐理由中需说明该方案的心智钩子如何服务目标用户的情绪需求`;
+      }
+    }
   }
 
   return input;

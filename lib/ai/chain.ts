@@ -238,9 +238,19 @@ export async function runPromptChain(
     model,
     system: p8SystemPrompt,
     prompt: formatP8Input(
-      packages.map(pkg => ({ angle: pkg.contentAngle, scriptTitle: pkg.script.title })),
+      packages.map(pkg => ({ angle: pkg.contentAngle, scriptTitle: pkg.script.title, mindHook: pkg.mindHook, mindValue: pkg.mindValue })),
       historicalFeedback,
-      taskType
+      taskType,
+      tonbsContext ? {
+        contentGoal,
+        tonbsUserGoal: tonbsContext.userGoal,
+        tonbsScene: tonbsContext.scene,
+        tonbsNeed: tonbsContext.need,
+        tonbsBarrier: tonbsContext.barrier,
+        tonbsSolution: tonbsContext.solution,
+        preferMindHook: tonbsContext.preferMindHook,
+        preferMindValue: tonbsContext.preferMindValue,
+      } : contentGoal ? { contentGoal } : null
     ),
   });
 
