@@ -350,8 +350,8 @@ export default function AnalysisPage() {
 
       {/* 底部操作 */}
       <div className="flex justify-between pt-4">
-        <Link href={`/tasks/${taskId}/edit`}>
-          <Button variant="outline">← 返回修改商品信息</Button>
+        <Link href={`/tasks/${taskId}/strategy`}>
+          <Button variant="outline">← 返回修改内容策略</Button>
         </Link>
         <Link href={`/tasks/${taskId}/select`}>
           <Button>生成内容包 →</Button>
