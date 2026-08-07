@@ -111,18 +111,43 @@ export async function POST(
       }
     }
 
+    // 构建内容策略上下文（TONBS + 心智钩子 + KPI）
+    let strategySection = "";
+    if (task.tonbsUserGoal || task.tonbsScene || task.tonbsNeed || task.tonbsBarrier || task.tonbsSolution) {
+      strategySection += "\n\n【用户洞察 TONBS】";
+      if (task.tonbsUserGoal) strategySection += `\nT 用户目标：${task.tonbsUserGoal}`;
+      if (task.tonbsScene) strategySection += `\nO 用户场景：${task.tonbsScene}`;
+      if (task.tonbsNeed) strategySection += `\nN 用户需求：${task.tonbsNeed}`;
+      if (task.tonbsBarrier) strategySection += `\nB 用户障碍：${task.tonbsBarrier}`;
+      if (task.tonbsSolution) strategySection += `\nS 更优方案：${task.tonbsSolution}`;
+    }
+    if (task.preferMindHook || task.preferMindValue) {
+      strategySection += "\n\n【心智钩子偏好】";
+      if (task.preferMindHook) strategySection += `\n面子钩子：${task.preferMindHook}`;
+      if (task.preferMindValue) strategySection += `\n里子价值：${task.preferMindValue}`;
+    }
+    if (task.contentGoal) {
+      const goalLabel = task.contentGoal === "mind_penetration"
+        ? "心智渗透（品类教育、场景唤起、信任建立）"
+        : "生意渗透（痛点解决、转化、复购）";
+      strategySection += `\n\n【内容目标 KPI】${goalLabel}`;
+    }
+    if (strategySection) {
+      strategySection = "\n\n---\n以下是用户填写的内容策略，请在 recommendation 字段中充分结合这些信息来生成推荐策略、内容方向、预览角度和推荐理由：" + strategySection;
+    }
+
     const { object: analysis } = await generateObject({
       model,
       mode: "json",
       schema: analysisSchema,
-      system: "你是电商商品分析专家。根据商品信息做简洁分析，所有字段严格控制在描述的字数限制内，不要输出多余内容。重要：historicalAnalysis 字段只有在提示词中明确提供了'历史记录'数据时才能填写有效内容，否则 hasHistory 必须为 false，goodPatterns/badPatterns 必须为空数组，summary 填'暂无历史数据'，iterationDirection 填'暂无'。严禁凭商品标题或描述中的代际信息（如'第3代'）推断历史数据。\n\n【合规要求-必须遵守】recommendation 字段的 summary、keyDirection、reasons、suggestedAngles 中：\n- 不得出现量化效果承诺（如'7天瘦X斤''X天见效'等）\n- 不得使用绝对化用语（最、第一、极速、速效等）\n- 不得推荐以违规功效宣称作为内容方向\n- 对于减肥/医疗/功效类高风险商品，推荐方向只能从使用场景、成分特性、人群适配等可合规表达的角度给出，不能将违规宣称包装为'引流策略'或'用户痛点'\n\n【角度生成要求】suggestedAngles 的3个角度必须在人群/痛点/风格上有实质差异，角度名称要生动具体，类似真实带货内容的标题风格。",
+      system: "你是电商商品分析专家。根据商品信息做简洁分析，所有字段严格控制在描述的字数限制内，不要输出多余内容。重要：historicalAnalysis 字段只有在提示词中明确提供了'历史记录'数据时才能填写有效内容，否则 hasHistory 必须为 false，goodPatterns/badPatterns 必须为空数组，summary 填'暂无历史数据'，iterationDirection 填'暂无'。严禁凭商品标题或描述中的代际信息（如'第3代'）推断历史数据。\n\n【合规要求-必须遵守】recommendation 字段的 summary、keyDirection、reasons、suggestedAngles 中：\n- 不得出现量化效果承诺（如'7天瘦X斤''X天见效'等）\n- 不得使用绝对化用语（最、第一、极速、速效等）\n- 不得推荐以违规功效宣称作为内容方向\n- 对于减肥/医疗/功效类高风险商品，推荐方向只能从使用场景、成分特性、人群适配等可合规表达的角度给出，不能将违规宣称包装为'引流策略'或'用户痛点'\n\n【角度生成要求】suggestedAngles 的3个角度必须在人群/痛点/风格上有实质差异，角度名称要生动具体，类似真实带货内容的标题风格。如果用户提供了 TONBS 用户洞察、心智钩子偏好或内容目标，recommendation 字段必须结合这些信息来生成，使推荐策略更具针对性。",
       prompt: `分析商品：
 标题：${product.title}
 详情：${product.detail.slice(0, 800)}
 ${product.price ? `价格：${product.price}` : ""}
 ${product.targetAudience ? `人群：${product.targetAudience}` : ""}
 ${productImagesSummary ? `商品图片信息：${productImagesSummary}` : ""}
-${competitorSummary ? `竞品信息：${competitorSummary}` : ""}${historicalDataSection}`,
+${competitorSummary ? `竞品信息：${competitorSummary}` : ""}${historicalDataSection}${strategySection}`,
     });
 
     return NextResponse.json(analysis);
