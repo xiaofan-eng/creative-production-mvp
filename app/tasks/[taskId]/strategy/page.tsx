@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -39,6 +39,26 @@ export default function StrategyPage() {
   const [mindValue, setMindValue] = useState("");
   const [contentGoal, setContentGoal] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // 加载已保存的策略配置
+  useEffect(() => {
+    fetch(`/api/tasks/${taskId}`)
+      .then(r => r.json())
+      .then(data => {
+        const task = data.task || {};
+        if (task.tonbsUserGoal) setUserGoal(task.tonbsUserGoal);
+        if (task.tonbsScene) setScene(task.tonbsScene);
+        if (task.tonbsNeed) setNeed(task.tonbsNeed);
+        if (task.tonbsBarrier) setBarrier(task.tonbsBarrier);
+        if (task.tonbsSolution) setSolution(task.tonbsSolution);
+        if (task.preferMindHook) setMindHook(task.preferMindHook);
+        if (task.preferMindValue) setMindValue(task.preferMindValue);
+        if (task.contentGoal) setContentGoal(task.contentGoal);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [taskId]);
 
   const handleSubmit = async () => {
     setSaving(true);
@@ -78,6 +98,10 @@ export default function StrategyPage() {
         </p>
       </div>
 
+      {loading ? (
+        <div className="text-center py-12 text-muted-foreground text-sm">加载中...</div>
+      ) : (
+      <>
       {/* TONBS 用户洞察 */}
       <Card>
         <CardHeader>
@@ -238,7 +262,7 @@ export default function StrategyPage() {
 
       {/* 操作按钮 */}
       <div className="flex justify-between pt-2 pb-8">
-        <Link href={`/tasks/new`}>
+        <Link href={`/tasks/${taskId}/edit`}>
           <Button variant="outline">← 返回修改商品信息</Button>
         </Link>
         <div className="flex gap-3">
@@ -250,6 +274,8 @@ export default function StrategyPage() {
           </Button>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
