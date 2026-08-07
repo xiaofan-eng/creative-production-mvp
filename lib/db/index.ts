@@ -28,6 +28,13 @@ sqlite.exec(`
     status TEXT NOT NULL DEFAULT 'pending',
     generate_type TEXT,
     content_goal TEXT,
+    tonbs_user_goal TEXT,
+    tonbs_scene TEXT,
+    tonbs_need TEXT,
+    tonbs_barrier TEXT,
+    tonbs_solution TEXT,
+    prefer_mind_hook TEXT,
+    prefer_mind_value TEXT,
     created_at TEXT NOT NULL
   );
 
@@ -105,3 +112,10 @@ try { sqlite.exec(`ALTER TABLE content_versions ADD COLUMN overall_risk_level TE
 try { sqlite.exec(`ALTER TABLE tasks ADD COLUMN content_goal TEXT;`); } catch { /* already exists */ }
 try { sqlite.exec(`ALTER TABLE content_versions ADD COLUMN mind_hook TEXT;`); } catch { /* already exists */ }
 try { sqlite.exec(`ALTER TABLE content_versions ADD COLUMN mind_value TEXT;`); } catch { /* already exists */ }
+try { sqlite.exec(`ALTER TABLE tasks ADD COLUMN tonbs_user_goal TEXT;`); } catch { /* already exists */ }
+try { sqlite.exec(`ALTER TABLE tasks ADD COLUMN tonbs_scene TEXT;`); } catch { /* already exists */ }
+try { sqlite.exec(`ALTER TABLE tasks ADD COLUMN tonbs_need TEXT;`); } catch { /* already exists */ }
+try { sqlite.exec(`ALTER TABLE tasks ADD COLUMN tonbs_barrier TEXT;`); } catch { /* already exists */ }
+try { sqlite.exec(`ALTER TABLE tasks ADD COLUMN tonbs_solution TEXT;`); } catch { /* already exists */ }
+try { sqlite.exec(`ALTER TABLE tasks ADD COLUMN prefer_mind_hook TEXT;`); } catch { /* already exists */ }
+try { sqlite.exec(`ALTER TABLE tasks ADD COLUMN prefer_mind_value TEXT;`); } catch { /* already exists */ }

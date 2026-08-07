@@ -108,8 +108,19 @@ export async function POST(
           if (historicalFeedback.length === 0) historicalFeedback = null;
         }
 
-        // 运行 Prompt Chain，传入 taskType 和 contentGoal
-        const result = await runPromptChain(product, sendEvent, historicalFeedback, generateType, task.taskType, task.contentGoal);
+        // 运行 Prompt Chain，传入 taskType、contentGoal 和 TONBS 策略
+        const tonbsContext = (task.tonbsUserGoal || task.tonbsScene || task.tonbsNeed || task.tonbsBarrier || task.tonbsSolution)
+          ? {
+              userGoal: task.tonbsUserGoal || undefined,
+              scene: task.tonbsScene || undefined,
+              need: task.tonbsNeed || undefined,
+              barrier: task.tonbsBarrier || undefined,
+              solution: task.tonbsSolution || undefined,
+              preferMindHook: task.preferMindHook || undefined,
+              preferMindValue: task.preferMindValue || undefined,
+            }
+          : undefined;
+        const result = await runPromptChain(product, sendEvent, historicalFeedback, generateType, task.taskType, task.contentGoal, tonbsContext);
 
         // 保存商品画像
         db.insert(productProfiles).values({

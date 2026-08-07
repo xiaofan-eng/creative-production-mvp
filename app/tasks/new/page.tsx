@@ -251,7 +251,7 @@ function NewTaskForm() {
 
       if (!res.ok) throw new Error("创建失败");
       const data = await res.json();
-      router.push(`/tasks/${data.task.id}/analysis`);
+      router.push(`/tasks/${data.task.id}/strategy`);
     } catch {
       alert("创建任务失败，请重试");
     } finally {
@@ -501,34 +501,8 @@ function NewTaskForm() {
               />
             </div>
 
-            {/* 内容目标（可选） */}
-            <div className="space-y-2">
-              <Label>内容目标 <span className="text-muted-foreground font-normal text-xs">（可选）</span></Label>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { value: "mind_penetration", label: "🧠 心智渗透", desc: "让用户记住品类/场景，建立品牌认知" },
-                  { value: "business_penetration", label: "💰 生意渗透", desc: "推动转化、加购或复购" },
-                ].map(g => (
-                  <button
-                    key={g.value}
-                    type="button"
-                    onClick={() => setContentGoal(contentGoal === g.value ? "" : g.value)}
-                    className={`p-3 rounded-lg border text-left transition-all ${
-                      contentGoal === g.value
-                        ? "border-primary bg-primary/5 ring-1 ring-primary"
-                        : "border-border hover:border-primary/50"
-                    }`}
-                  >
-                    <p className="font-medium text-sm">{g.label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{g.desc}</p>
-                  </button>
-                ))}
-              </div>
-              {!contentGoal && <p className="text-xs text-muted-foreground">不选则 AI 自由判断内容方向</p>}
-            </div>
-
             <Button type="submit" className="w-full" disabled={loading || !title || !detail}>
-              {loading ? "创建中..." : "🚀 创建任务并开始生成"}
+              {loading ? "保存商品信息 →" : "下一步：配置内容策略 →"}
             </Button>
           </form>
         </CardContent>

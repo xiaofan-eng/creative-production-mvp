@@ -100,7 +100,16 @@ export function formatP3Input(
   category: string,
   historicalAngles?: Array<{ angle: string; feedback: string }> | null,
   taskType?: string | null,
-  contentGoal?: string | null
+  contentGoal?: string | null,
+  tonbsContext?: {
+    userGoal?: string;
+    scene?: string;
+    need?: string;
+    barrier?: string;
+    solution?: string;
+    preferMindHook?: string;
+    preferMindValue?: string;
+  }
 ) {
   let input = `基于以下优先卖点，生成 3 个差异化内容角度：
 
@@ -117,6 +126,23 @@ ${sellingPoints.map(sp => `排名 ${sp.rank}: ${sp.point}（面向：${sp.target
     input += `\n\n## 内容目标
 本次内容主要服务：${goalLabel}
 请确保3个角度的方向和钩子设计都服务于该目标。`;
+  }
+
+  if (tonbsContext && (tonbsContext.userGoal || tonbsContext.scene || tonbsContext.need || tonbsContext.barrier || tonbsContext.solution)) {
+    input += `\n\n## 用户洞察（TONBS）`;
+    if (tonbsContext.userGoal) input += `\nT 用户目标：${tonbsContext.userGoal}`;
+    if (tonbsContext.scene) input += `\nO 用户场景：${tonbsContext.scene}`;
+    if (tonbsContext.need) input += `\nN 用户需求：${tonbsContext.need}`;
+    if (tonbsContext.barrier) input += `\nB 用户障碍：${tonbsContext.barrier}`;
+    if (tonbsContext.solution) input += `\nS 更优方案：${tonbsContext.solution}`;
+    input += `\n请充分利用以上用户洞察，让角度更精准地命中用户真实痛点和场景。`;
+  }
+
+  if (tonbsContext?.preferMindHook || tonbsContext?.preferMindValue) {
+    input += `\n\n## 心智钩子偏好`;
+    if (tonbsContext.preferMindHook) input += `\n希望优先使用的面子钩子：${tonbsContext.preferMindHook}`;
+    if (tonbsContext.preferMindValue) input += `\n希望传递的里子价值：${tonbsContext.preferMindValue}`;
+    input += `\n（可以有1-2个角度采用此钩子，但3个角度不应完全相同）`;
   }
 
   if (historicalAngles && historicalAngles.length > 0) {

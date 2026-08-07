@@ -60,7 +60,16 @@ export async function runPromptChain(
   }> | null,
   generateType?: string | null, // "script" | "image_brief" | "storyboard" | null (all)
   taskType?: string | null, // "new_product" | "relaunch" | "low_performance"
-  contentGoal?: string | null  // "mind_penetration" | "business_penetration" | null
+  contentGoal?: string | null,  // "mind_penetration" | "business_penetration" | null
+  tonbsContext?: {
+    userGoal?: string;
+    scene?: string;
+    need?: string;
+    barrier?: string;
+    solution?: string;
+    preferMindHook?: string;
+    preferMindValue?: string;
+  }
 ): Promise<GenerationResult> {
   // Step 1: P1 商品结构化
   onProgress(1, "商品信息结构化");
@@ -107,7 +116,7 @@ export async function runPromptChain(
     mode: "json",
     schema: contentAnglesSchema,
     system: p3SystemPrompt,
-    prompt: formatP3Input(sellingPoints.rankedPoints, profile.category, historicalAngles, taskType, contentGoal),
+    prompt: formatP3Input(sellingPoints.rankedPoints, profile.category, historicalAngles, taskType, contentGoal, tonbsContext),
   });
   onProgress(3, "内容角度生成", contentAngles);
 

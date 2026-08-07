@@ -8,6 +8,15 @@ export const tasks = sqliteTable("tasks", {
   status: text("status", { enum: ["pending", "generating", "completed", "failed"] }).notNull().default("pending"),
   generateType: text("generate_type"), // "script" | "image_brief" | "storyboard" | null
   contentGoal: text("content_goal"), // "mind_penetration" | "business_penetration" | null
+  // TONBS 用户洞察（可选）
+  tonbsUserGoal: text("tonbs_user_goal"),       // T: 用户目标
+  tonbsScene: text("tonbs_scene"),              // O: 用户场景
+  tonbsNeed: text("tonbs_need"),                // N: 用户需求
+  tonbsBarrier: text("tonbs_barrier"),          // B: 用户障碍
+  tonbsSolution: text("tonbs_solution"),        // S: 更优方案
+  // 心智钩子偏好（可选，影响 P3 角度选择）
+  preferMindHook: text("prefer_mind_hook"),     // "冲突感" | "熟悉感" | "陌生感"
+  preferMindValue: text("prefer_mind_value"),   // "满足感" | "成就感" | "参与感"
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
